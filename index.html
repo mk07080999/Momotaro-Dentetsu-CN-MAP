@@ -8,9 +8,71 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Image Map Example</title>
+    <title>Image Map Example with Zoom</title>
 
-    <link rel="stylesheet" href="styles/styles.css">
+    <link rel="stylesheet" href="styles.css">
+
+    <style>
+
+        body {
+
+            font-family: Arial, sans-serif;
+
+            text-align: center;
+
+            margin: 0;
+
+            padding: 0;
+
+        }
+
+
+
+        #image-container {
+
+            width: 100%;
+
+            height: 600px;
+
+            overflow: hidden;
+
+            position: relative;
+
+            margin: 20px auto;
+
+            border: 1px solid #ddd;
+
+        }
+
+
+
+        #example-image {
+
+            width: 100%;
+
+            height: auto;
+
+            transform-origin: center;
+
+            transition: transform 0.3s ease;
+
+        }
+
+
+
+        button {
+
+            margin: 10px;
+
+            padding: 10px 20px;
+
+            font-size: 16px;
+
+            cursor: pointer;
+
+        }
+
+    </style>
 
 </head>
 
@@ -18,31 +80,25 @@
 
     <h1>Image Map Example</h1>
 
-    <button onclick="zoomIn()">放大</button>
+    <button id="zoom-in">放大</button>
 
-    <button onclick="zoomOut()">縮小</button>
+    <button id="zoom-out">縮小</button>
 
-    <div id="svg-container" style="width: 100%; height: 500px;">
+    <div id="image-container">
 
-        <svg id="example-image" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500">
-
-            <image xlink:href="your-image.png" width="500" height="400" />
-
-            <a xlink:href="#section1">
-
-                <rect x="34" y="44" width="236" height="306" fill="transparent" stroke="red" stroke-width="2"></rect>
-
-            </a>
-
-            <a xlink:href="#section2">
-
-                <rect x="290" y="172" width="43" height="78" fill="transparent" stroke="blue" stroke-width="2"></rect>
-
-            </a>
-
-        </svg>
+        <img id="example-image" src="images/large-image.png" alt="Example Image" usemap="#image-map">
 
     </div>
+
+
+
+    <map name="image-map">
+
+        <area target="" alt="Description1" title="Description1" href="#section1" coords="100,100,200,200" shape="rect">
+
+        <area target="" alt="Description2" title="Description2" href="#section2" coords="300,300,400,400" shape="rect">
+
+    </map>
 
 
 
@@ -62,11 +118,9 @@
 
     </div>
 
-    
 
-    <script src="scripts/svg-pan-zoom.js"></script>
 
-    <script src="scripts/scripts.js"></script>
+    <script src="scripts.js"></script>
 
 </body>
 
