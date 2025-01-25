@@ -1,33 +1,43 @@
-// 初始化 svg-pan-zoom
 
-const panZoomInstance = svgPanZoom('#example-image', {
+// 選取圖片和按鈕
 
-    zoomEnabled: true,
+const image = document.getElementById('example-image');
 
-    controlIconsEnabled: false,
+const zoomInButton = document.getElementById('zoom-in');
 
-    fit: true,
+const zoomOutButton = document.getElementById('zoom-out');
 
-    center: true
 
-});
+
+// 初始化縮放比例
+
+let scale = 1;
 
 
 
 // 放大功能
 
-function zoomIn() {
+zoomInButton.addEventListener('click', () => {
 
-    panZoomInstance.zoomIn();
+    scale += 0.1; // 每次放大10%
 
-}
+    image.style.transform = `scale(${scale})`;
+
+});
 
 
 
 // 縮小功能
 
-function zoomOut() {
+zoomOutButton.addEventListener('click', () => {
 
-    panZoomInstance.zoomOut();
+    if (scale > 0.2) { // 防止縮小到不可見
 
-}
+        scale -= 0.1; // 每次縮小10%
+
+        image.style.transform = `scale(${scale})`;
+
+    }
+
+});
+
