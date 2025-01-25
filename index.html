@@ -5,6 +5,116 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>氣泡名稱顯示控制</title>
   <style>
+.legend-toggle {
+   background: #333;
+   color: #fff;
+   padding: 2px 5px;
+}
+.legend-toggle a {
+  color: #fff;
+  cursor : pointer;
+}
+.legend-toggle a:before {
+    content: "\f150";
+    font-family: fontawesome;
+    margin-right: 5px;
+}
+.scroll-map-layer-control {
+  font-size: 12px;
+  position: absolute;
+  bottom:0;
+  left:0;
+  background: white;
+  z-index:9999;
+  border-top-right-radius: 4px;
+  opacity: 0.9;
+}
+.scroll-map-layer-control label {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.scroll-map-container {
+  position: relative;
+}
+.scroll-map-container-full {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left : 0;
+  margin: 0;
+  padding: 0;
+}
+.scroll-map-copyright img.scroll-map-copyright-logo {
+  height: 20px;
+}
+
+.scroll-map-div-icon-label {
+  width: auto;
+  color: white;
+  background-color: #cc0000;
+  border-radius: 8px;
+  text-align: center;
+  padding: 2px;
+  position: relative;
+  display: block;
+  font-size: 11px;
+  /*border: 1px solid white;*/
+  font-weight: bold;
+}
+
+.map-zoom--3 .scroll-map-icon-item .scroll-map-div-icon-label,
+.map-zoom--2 .scroll-map-icon-item .scroll-map-div-icon-label {
+  display:none;
+}
+
+.scroll-map-icon-item  {
+  background-image:url('https://s3-ap-northeast-1.amazonaws.com/media.gamepedia/pokemon.gamepedia.com/wp-content/uploads/sites/14/2020/06/24134949/137b2feeb4e6570e04d8ff756d3b8dac.png');
+
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-size: 16px 16px;
+  /*background-position: -20px -10px; */
+  background-position: center;
+  padding-top:20px;
+  height: 22px;
+}
+.scroll-map-icon-item .scroll-map-div-icon-label {
+  background-color: #cc0000;
+}
+
+.map-zoom--3 .scroll-map-icon-item2 .scroll-map-div-icon-label,
+.map-zoom--2 .scroll-map-icon-item2 .scroll-map-div-icon-label {
+  display:none;
+}
+
+.scroll-map-icon-item2  {
+  background-image:url('https://s3-ap-northeast-1.amazonaws.com/media.gamepedia/pokemon.gamepedia.com/wp-content/uploads/sites/14/2020/06/24134950/0ced435ac652e7f5cd9da93a4bbbfd28.png');
+
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-size: 16px 16px;
+  /*background-position: -20px -10px; */
+  background-position: center;
+  padding-top:20px;
+  height: 22px;
+}
+
+.scroll-map-icon-item2 .scroll-map-div-icon-label {
+  background-color: #ffcc00;
+}
+
+.scroll-map-icon-area .scroll-map-div-icon-label {
+  background-color: transparent;
+  color: #fff;
+  border: none;
+  font-size: 18px;
+  width: 120px;
+  font-weight: normal;
+
+}
+  <style>
     .scroll-map-container {
       position: relative;
       overflow: hidden;
