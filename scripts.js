@@ -1,12 +1,33 @@
-```js
+// 初始化 svg-pan-zoom
+
+const panZoomInstance = svgPanZoom('#example-image', {
+
+    zoomEnabled: true,
+
+    controlIconsEnabled: false,
+
+    fit: true,
+
+    center: true
+
+});
+
+
+
+// 放大功能
+
 function zoomIn() {
-    const img = document.getElementById("example-image");
-    const width = img.clientWidth;
-    img.style.width = (width * 1.2) + "px"; // 將寬度放大20%
+
+    panZoomInstance.zoomIn();
+
 }
 
+
+
+// 縮小功能
+
 function zoomOut() {
-    const img = document.getElementById("example-image");
-    const width = img.clientWidth;
-    img.style.width = (width * 0.8) + "px"; // 將寬度縮小20%
+
+    panZoomInstance.zoomOut();
+
 }
