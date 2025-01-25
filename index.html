@@ -1,31 +1,73 @@
 <!DOCTYPE html>
-   <html lang="en">
-   <head>
-       <meta charset="UTF-8">
-       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-       <title>Image Map Example</title>
-       <link rel="stylesheet" href="styles.css">
-   </head>
-   <body>
-       <h1>Image Map Example</h1>
-       <button onclick="zoomIn()">放大</button>
-       <button onclick="zoomOut()">縮小</button>
-       <img id="example-image" src="images/your-image.png" alt="Example Image" usemap="#image-map">
-       
-       <map name="image-map">
-           <area target="" alt="Description1" title="Description1" href="#section1" coords="34,44,270,350" shape="rect">
-           <area target="" alt="Description2" title="Description2" href="#section2" coords="290,172,333,250" shape="rect">
-       </map>
-       
-       <div id="section1">
-           <h2>Section 1</h2>
-           <p>Content for section 1</p>
-       </div>
-       <div id="section2">
-           <h2>Section 2</h2>
-           <p>Content for section 2</p>
-       </div>
-       
-       <script src="scripts.js"></script>
-   </body>
-   </html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Image Map Example</title>
+
+    <link rel="stylesheet" href="styles.css">
+
+</head>
+
+<body>
+
+    <h1>Image Map Example</h1>
+
+    <button onclick="zoomIn()">放大</button>
+
+    <button onclick="zoomOut()">縮小</button>
+
+    <div id="svg-container" style="width: 100%; height: 500px;">
+
+        <svg id="example-image" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500">
+
+            <image xlink:href="images/MAP1.0.png" width="4000" height="4000" />
+
+            <a xlink:href="#section1">
+
+                <rect x="34" y="44" width="236" height="306" fill="transparent" stroke="red" stroke-width="2"></rect>
+
+            </a>
+
+            <a xlink:href="#section2">
+
+                <rect x="290" y="172" width="43" height="78" fill="transparent" stroke="blue" stroke-width="2"></rect>
+
+            </a>
+
+        </svg>
+
+    </div>
+
+
+
+    <div id="section1">
+
+        <h2>Section 1</h2>
+
+        <p>Content for section 1</p>
+
+    </div>
+
+    <div id="section2">
+
+        <h2>Section 2</h2>
+
+        <p>Content for section 2</p>
+
+    </div>
+
+    
+
+    <script src="scripts/svg-pan-zoom.js"></script>
+
+    <script src="scripts.js"></script>
+
+</body>
+
+</html>
