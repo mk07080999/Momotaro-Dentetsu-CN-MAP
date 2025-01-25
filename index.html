@@ -1,100 +1,85 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>氣泡名稱顯示控制</title>
+  <style>
+    .scroll-map-container {
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+    }
 
-    <meta charset="UTF-8">
+    .scroll-map {
+      position: relative;
+      background: #f0f0f0;
+    }
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    .scroll-map-icon {
+      position: absolute;
+      display: none; /* 默認隱藏 */
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 12px;
+      border: 1px solid #ccc;
+      white-space: nowrap;
+    }
 
-    <title>Image Map Example with Zoom</title>
+    .checkbox-container {
+      margin-bottom: 10px;
+    }
 
-    <style>
-
-        body {
-
-            font-family: Arial, sans-serif;
-
-            text-align: center;
-
-            margin: 0;
-
-            padding: 0;
-
-        }
-
-
-
-        #image-container {
-
-            width: 100%;
-
-            height: 600px;
-
-            overflow: hidden;
-
-            position: relative;
-
-            margin: 20px auto;
-
-            border: 1px solid #ddd;
-
-        }
-
-
-
-        #example-image {
-
-            width: 100%;
-
-            height: auto;
-
-            transform-origin: center;
-
-            transition: transform 0.3s ease;
-
-        }
-
-
-
-        button {
-
-            margin: 10px;
-
-            padding: 10px 20px;
-
-            font-size: 16px;
-
-            cursor: pointer;
-
-        }
-
-    </style>
-
+    .checkbox-container label {
+      margin-right: 15px;
+    }
+  </style>
 </head>
-
 <body>
 
-    <h1>Image Map Example</h1>
+<div class="checkbox-container">
+  <!-- 添加多個選項對應不同的氣泡名稱 -->
+  <label><input type="checkbox" class="toggle-icon" data-target="map-icon-1518097150"> 鉄道省</label>
+  <label><input type="checkbox" class="toggle-icon" data-target="map-icon-396159231"> 佐原</label>
+  <label><input type="checkbox" class="toggle-icon" data-target="map-icon-241227456"> 後楽園</label>
+</div>
 
-    <button id="zoom-in">放大</button>
-
-    <button id="zoom-out">縮小</button>
-
-    <div id="image-container">
-
-        <img id="example-image" src="https://media.gamepedia.jp/wp-content/uploads/sites/100/2020/12/21124833/momotetsu-map2.png" alt="Example Image" usemap="#image-map">
-
+<div class="scroll-map-container">
+  <div id="map-1" class="scroll-map" 
+       style="height: 420px; width: 100%; background: url('https://i0.wp.com/s3.ap-northeast-1.amazonaws.com/media.gamepedia/wp-content/uploads/sites/100/2020/12/12125702/momotetsu-map.png?ssl=1') no-repeat center; background-size: contain;">
+    <!-- 氣泡名稱 -->
+    <div id="map-icon-1518097150" class="scroll-map-icon" style="top: 590px; left: 700px;">
+      鉄道省駅
     </div>
+    <div id="map-icon-396159231" class="scroll-map-icon" style="top: 520px; left: 750px;">
+      佐原駅
+    </div>
+    <div id="map-icon-241227456" class="scroll-map-icon" style="top: 560px; left: 680px;">
+      後楽園駅
+    </div>
+  </div>
+</div>
 
+<script>
+  // 獲取所有的 checkbox
+  const checkboxes = document.querySelectorAll('.toggle-icon');
 
+  // 監聽每個 checkbox 的點擊事件
+  checkboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', function () {
+      const targetId = this.dataset.target; // 獲取目標氣泡的 ID
+      const targetIcon = document.getElementById(targetId);
 
-
-
-
-    <script src="scripts/scripts.js"></script>
+      // 顯示或隱藏對應的氣泡
+      if (this.checked) {
+        targetIcon.style.display = 'block';
+      } else {
+        targetIcon.style.display = 'none';
+      }
+    });
+  });
+</script>
 
 </body>
-
 </html>
