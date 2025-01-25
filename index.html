@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+   <html lang="en">
+   <head>
+       <meta charset="UTF-8">
+       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+       <title>Image Map Example</title>
+       <link rel="stylesheet" href="styles.css">
+   </head>
+   <body>
+       <h1>Image Map Example</h1>
+       <img src="images/your-image.jpg" alt="Example Image" usemap="#image-map">
+       
+       <map name="image-map">
+           <area target="" alt="Description1" title="Description1" href="#section1" coords="34,44,270,350" shape="rect">
+           <area target="" alt="Description2" title="Description2" href="#section2" coords="290,172,333,250" shape="rect">
+       </map>
+       
+       <div id="section1">
+           <h2>Section 1</h2>
+           <p>Content for section 1</p>
+       </div>
+       <div id="section2">
+           <h2>Section 2</h2>
+           <p>Content for section 2</p>
+       </div>
+       
+       <script src="scripts.js"></script>
+   </body>
+   </html>
