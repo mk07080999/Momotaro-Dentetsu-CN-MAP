@@ -8,7 +8,9 @@
    </head>
    <body>
        <h1>Image Map Example</h1>
-       <img src="images/your-image.png" alt="Example Image" usemap="#image-map">
+       <button onclick="zoomIn()">放大</button>
+       <button onclick="zoomOut()">縮小</button>
+       <img id="example-image" src="images/your-image.png" alt="Example Image" usemap="#image-map">
        
        <map name="image-map">
            <area target="" alt="Description1" title="Description1" href="#section1" coords="34,44,270,350" shape="rect">
