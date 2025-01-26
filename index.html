@@ -16,11 +16,8 @@
       color: white;
       padding: 5px;
       border-radius: 5px;
-      font-size: 12px;
       white-space: nowrap;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      text-align: center;
     }
     #controls {
       margin: 10px 0;
@@ -31,6 +28,27 @@
       padding: 5px;
       border-radius: 5px;
       font-size: 14px;
+    }
+    #fullscreen-button {
+      padding: 10px;
+      border: 1px solid #aaa;
+      border-radius: 5px;
+      background-color: #f8f9fa;
+      cursor: pointer;
+    }
+    #fullscreen-button:hover {
+      background-color: #e2e6ea;
+    }
+    #mouse-click-records {
+      margin-top: 20px;
+      list-style-type: none;
+      padding: 0;
+    }
+    #mouse-click-records li {
+      padding: 5px;
+      background-color: #f8f9fa;
+      margin: 5px 0;
+      border-radius: 5px;
     }
   </style>
 </head>
@@ -47,8 +65,14 @@
       <input type="checkbox" id="toggle-specific-marker" checked>
       顯示特定圖標
     </label>
+    <button id="fullscreen-button">切換全螢幕</button>
   </div>
   <div id="map"></div>
+
+  <div>
+    <h3>滑鼠點擊記錄：</h3>
+    <ul id="mouse-click-records"></ul>
+  </div>
 </main>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -56,42 +80,139 @@
   // 初始化地圖
   var map = L.map('map', {
     crs: L.CRS.Simple,
-    minZoom: -2
+    minZoom: -1,
+    zoomDelta: 1,
+    maxZoom: 4.5,
+    minZoom: -1
   }).setView([0, 0], 0);
 
   // 添加自訂圖片圖層
   var bounds = [[0, 0], [1000, 1000]];
   L.imageOverlay('https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/MAP_4_0.png', bounds).addTo(map);
 
-  // 使用自訂樣式的 divIcon
-  function createCustomIcon(label) {
-    var fontSize = 12; // 固定字體大小為12
-    var width = label.length * fontSize * 0.6; // 根據文字長度計算寬度
-    var height = fontSize + 10; // 固定高度為字體大小加10
+  // 使用自訂樣式的 divIcon，讓圖標大小符合文字並使定位基於文字的長度
+function createCustomIcon(label, fontSize = 10) { // 將默認字體大小從10調小到8
+  var textWidth = label.length * fontSize * 0.8; // 減小文字寬度的比例
+  var width = Math.max(40, textWidth + 10); // 圖標寬度減少
+  var height = Math.max(15, fontSize + 5); // 圖標高度減少
 
-    return L.divIcon({
-      className: 'scroll-map-div-icon-label',
-      html: label,
-      iconSize: [width, height]
-    });
-  }
+  var iconAnchorX = width / 2; // 水平方向置中
+  var iconAnchorY = height / 2; // 垂直方向置中
 
-  // 添加標記
-  var allMarkers = [];
-  var specificMarker;
+  return L.divIcon({
+    className: 'scroll-map-div-icon-label',
+    html: `<div style="
+      background-color: rgba(210, 34, 34, 0.91);
+      color: white;
+      padding: 20; /* 減小內邊距 */
+      border-radius: 20; /* 減小圓角 */
+      font-size: ${fontSize}px; /* 使用更小的字體 */
+      width: ${width}px;
+      height: ${height}px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      text-align: center;
+    ">${label}</div>`,
+    iconSize: [width, height],
+    iconAnchor: [iconAnchorX, iconAnchorY]
+  });
+}
 
-  // 添加多個標記
-  allMarkers.push(L.marker([300, 300], { icon: createCustomIcon('標記1') }).addTo(map));
-  allMarkers.push(L.marker([700, 700], { icon: createCustomIcon('標記2') }).addTo(map));
+  // 標記的座標和對應資訊
+  var positions = [
+    { coords: [706.14, 715.29], label: '標記1', info: '這是標記1的專屬資訊' },
+    { coords: [705, 686], label: '標記2', info: '這是標記2的專屬資訊' },
+    { coords: [714.86, 714.86], label: '標記3', info: '這是標記3的專屬資訊' },
+    { coords: [690, 640], label: '標記4', info: '這是標記4的專屬資訊' },
+    { coords: [293.05, 403.63], label: '標記4', info: '這是標記4的專屬資訊' },
+   { coords: [741.09, 753.48], label: '標記', info: '這是標記2的專屬資訊' },
+  { coords: [910.79, 798.05], label: '標 記', info: '這是標記1的專屬資訊' },
+  { coords: [926.15, 729.94], label: '標記1', info: '這是標記1的專屬資訊' },
+  //
 
+{ coords: [185.22, 168.73], label: '枕崎', info: '標記2' },
+{ coords: [194.94, 168.55], label: '知覧', info: '標記3' },
+{ coords: [204.74, 178.27], label: '鹿児島', info: '標記4' },
+{ coords: [194.85, 188.35], label: '桜島', info: '標記5' },
+{ coords: [184.86, 198.07], label: '鹿屋', info: '標記6' },
+{ coords: [204.66, 208.23], label: '都城', info: '標記7' },
+{ coords: [214.91, 218.13], label: '宮崎', info: '標記8' },
+{ coords: [223.57, 218.04], label: '西都', info: '標記9' },
+{ coords: [234.66, 168.81], label: '水俣', info: '標記10' },
+{ coords: [243.14, 178.58], label: '八代', info: '標記11' },
+{ coords: [234.48, 188.34], label: '人吉', info: '標記12' },
+  //
+{ coords: [48.44, 25.36], label: '石垣島', info: '石垣島' },
+{ coords: [48.66, 57.88], label: '宮古島', info: '宮古島' },
+{ coords: [112.43, 45.03], label: '久米島', info: '' },
+{ coords: [77.74, 108.70], label: '那覇', info: '' },
+{ coords: [89.01, 131.68], label: 'うるま', info: '' },
+{ coords: [98.77, 131.55], label: '金武', info: '' },
+{ coords: [108.45, 121.97], label: '本部', info: '' },
+{ coords: [108.45, 131.65], label: '名護', info: '' },
+{ coords: [127.01, 131.65], label: '大宜味', info: '' },
+{ coords: [100.98, 184.15], label: '奄美大島', info: '' },
+{ coords: [139.70, 196.97], label: '屋久島', info: '' },
+{ coords: [138.20, 215.57], label: '種子島', info: '' },
+  ];  
   // 添加特定標記
   specificMarker = L.marker([500, 500], { icon: createCustomIcon('特定標記') }).addTo(map);
+  specificMarker.bindPopup(''); // 預設為空資訊
 
-  // 顯示滑鼠位置
+  // 初始化標記
+  var allMarkers = [];
+  positions.forEach((pos) => {
+    var marker = L.marker(pos.coords, { icon: createCustomIcon(pos.label) }).addTo(map);
+    marker.bindPopup(pos.info); // 綁定專屬資訊
+    allMarkers.push(marker);
+  });
+
+  // 縮放事件處理
+  map.on('zoomend', function () {
+    var currentZoom = map.getZoom();
+    var fontSize = Math.max(16, Math.min(12, currentZoom * 4)); // 根據縮放級別調整字體大小
+    allMarkers.forEach((marker, index) => {
+      var pos = positions[index];
+      var newIcon = createCustomIcon(pos.label, fontSize);
+      marker.setIcon(newIcon);
+    });
+  });
+
+  // 滑鼠位置記錄
+  var mouseClickPositions = [];
+
+  // 監聽滑鼠移動事件顯示當前位置
   map.on('mousemove', function(event) {
     var positionElement = document.getElementById('mouse-position');
     positionElement.textContent = `滑鼠位置：${event.latlng.lat.toFixed(2)}, ${event.latlng.lng.toFixed(2)}`;
   });
+
+  // 監聽左鍵點擊事件
+  map.on('click', function(event) {
+    if (event.originalEvent.button === 0) {
+      var clickPosition = {
+        lat: event.latlng.lat.toFixed(2),
+        lng: event.latlng.lng.toFixed(2)
+      };
+      mouseClickPositions.push(clickPosition);
+
+      // 顯示所有記錄的點擊位置
+      updateClickPositionsDisplay();
+    }
+  });
+
+  // 更新顯示所有的滑鼠點擊位置
+  function updateClickPositionsDisplay() {
+    var positionsList = document.getElementById('mouse-click-records');
+    positionsList.innerHTML = ''; // 清空原來的記錄
+    mouseClickPositions.forEach(function(position, index) {
+      var listItem = document.createElement('li');
+      listItem.textContent = `{ coords: [${position.lat}, ${position.lng}], label: '標記${index + 1}', info: '' },`;
+      positionsList.appendChild(listItem);
+    });
+  }
 
   // 切換所有圖標的顯示
   document.getElementById('toggle-all-markers').addEventListener('change', function(event) {
@@ -105,12 +226,15 @@
     });
   });
 
-  // 切換特定圖標的顯示
-  document.getElementById('toggle-specific-marker').addEventListener('change', function(event) {
-    if (event.target.checked) {
-      specificMarker.addTo(map);
+  // 切換全螢幕功能
+  var mapContainer = document.getElementById('map');
+  var fullscreenButton = document.getElementById('fullscreen-button');
+
+  fullscreenButton.addEventListener('click', function() {
+    if (!document.fullscreenElement) {
+      mapContainer.requestFullscreen();
     } else {
-      map.removeLayer(specificMarker);
+      document.exitFullscreen();
     }
   });
 </script>
