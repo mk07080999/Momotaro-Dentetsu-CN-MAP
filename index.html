@@ -1,112 +1,118 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>圖片放大縮小與顯示名稱</title>
+  <title>自訂圖標示例</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    .scroll-map-container {
-      position: relative;
-      overflow: hidden;
+    #map {
+      height: 600px;
       width: 100%;
-      height: 500px;
+      border: 2px solid rgba(51, 51, 51, 0.31);
     }
-
-    .scroll-map {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+    .scroll-map-div-icon-label {
+      background-color: rgba(210, 34, 34, 0.91);
+      color: white;
+      padding: 5px;
+      border-radius: 5px;
+      font-size: 12px;
+      white-space: nowrap;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
-
-    .map-label {
-      position: absolute;
+    #controls {
+      margin: 10px 0;
+    }
+    #mouse-position {
+      display: inline-block;
       background-color: rgba(255, 255, 255, 0.7);
       padding: 5px;
       border-radius: 5px;
-      display: none; /* 默認隱藏 */
-    }
-
-    .checkbox-container {
-      margin-bottom: 10px;
-    }
-
-    .checkbox-container label {
-      margin-right: 15px;
+      font-size: 14px;
     }
   </style>
 </head>
 <body>
 
-<div class="checkbox-container">
-  <!-- 方框控制名稱顯示與隱藏 -->
-  <label><input type="checkbox" class="toggle-label" data-target="label-1"> 鉄道省</label>
-  <label><input type="checkbox" class="toggle-label" data-target="label-2"> 佐原</label>
-  <label><input type="checkbox" class="toggle-label" data-target="label-3"> 後楽園</label>
-</div>
-
-<div class="scroll-map-container">
-  <div id="map-1" class="scroll-map">
-    <!-- 地圖圖片 -->
-    <img id="map-image" src="https://i0.wp.com/s3.ap-northeast-1.amazonaws.com/media.gamepedia/wp-content/uploads/sites/100/2020/12/12125702/momotetsu-map.png?ssl=1" alt="Map" style="width: 100%; height: 100%;">
-
-    <!-- 名稱顯示在圖片上的位置 -->
-    <div id="label-1" class="map-label" style="left: 700px; top: 590px;">鉄道省</div>
-    <div id="label-2" class="map-label" style="left: 750px; top: 520px;">佐原</div>
-    <div id="label-3" class="map-label" style="left: 680px; top: 560px;">後楽園</div>
+<main>
+  <h1>自訂圖標示例 <span id="mouse-position">滑鼠位置：-</span></h1>
+  <div id="controls">
+    <label>
+      <input type="checkbox" id="toggle-all-markers" checked>
+      顯示所有圖標
+    </label>
+    <label>
+      <input type="checkbox" id="toggle-specific-marker" checked>
+      顯示特定圖標
+    </label>
   </div>
-</div>
+  <div id="map"></div>
+</main>
 
-<!-- 引入 svg-pan-zoom 库 -->
-<script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.0/dist/svg-pan-zoom.min.js"></script>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
-  // 初始化圖片的放大縮小與拖動功能
-  const mapElement = document.getElementById('map-1');
-  
-  const panZoom = svgPanZoom(mapElement, {
-    zoomEnabled: true,
-    controlIconsEnabled: true,
-    panEnabled: true,
-    fit: true,
-    center: true
-  });
+  // 初始化地圖
+  var map = L.map('map', {
+    crs: L.CRS.Simple,
+    minZoom: -2
+  }).setView([0, 0], 0);
 
-  // 當圖片放大縮小時，調整名稱的位置
-  mapElement.addEventListener('pan-zoom', function () {
-    updateLabelsPosition();
-  });
+  // 添加自訂圖片圖層
+  var bounds = [[0, 0], [1000, 1000]];
+  L.imageOverlay('https://drive.google.com/file/d/1HG09m_qy-A-3cOH0qpKJ5NAmJvkNhqyW/view', bounds).addTo(map);
 
-  // 根據縮放比例來調整名稱的位置
-  function updateLabelsPosition() {
-    const scale = panZoom.getScale();
-    const labels = document.querySelectorAll('.map-label');
-    
-    labels.forEach(label => {
-      const offsetX = parseFloat(label.getAttribute('data-offset-x')) || 0;
-      const offsetY = parseFloat(label.getAttribute('data-offset-y')) || 0;
+  // 使用自訂樣式的 divIcon
+  function createCustomIcon(label) {
+    var fontSize = 12; // 固定字體大小為12
+    var width = label.length * fontSize * 0.6; // 根據文字長度計算寬度
+    var height = fontSize + 10; // 固定高度為字體大小加10
 
-      label.style.left = (parseFloat(label.style.left) * scale + offsetX) + 'px';
-      label.style.top = (parseFloat(label.style.top) * scale + offsetY) + 'px';
+    return L.divIcon({
+      className: 'scroll-map-div-icon-label',
+      html: label,
+      iconSize: [width, height]
     });
   }
 
-  // 顯示或隱藏名稱
-  const checkboxes = document.querySelectorAll('.toggle-label');
-  checkboxes.forEach(checkbox => {
-    checkbox.addEventListener('change', function () {
-      const labelId = this.dataset.target;
-      const label = document.getElementById(labelId);
-      if (this.checked) {
-        label.style.display = 'block';
+  // 添加標記
+  var allMarkers = [];
+  var specificMarker;
+
+  // 添加多個標記
+  allMarkers.push(L.marker([300, 300], { icon: createCustomIcon('標記1') }).addTo(map));
+  allMarkers.push(L.marker([700, 700], { icon: createCustomIcon('標記2') }).addTo(map));
+
+  // 添加特定標記
+  specificMarker = L.marker([500, 500], { icon: createCustomIcon('特定標記') }).addTo(map);
+
+  // 顯示滑鼠位置
+  map.on('mousemove', function(event) {
+    var positionElement = document.getElementById('mouse-position');
+    positionElement.textContent = `滑鼠位置：${event.latlng.lat.toFixed(2)}, ${event.latlng.lng.toFixed(2)}`;
+  });
+
+  // 切換所有圖標的顯示
+  document.getElementById('toggle-all-markers').addEventListener('change', function(event) {
+    var checked = event.target.checked;
+    allMarkers.forEach(function(marker) {
+      if (checked) {
+        marker.addTo(map);
       } else {
-        label.style.display = 'none';
+        map.removeLayer(marker);
       }
     });
   });
 
-  // 預設載入地圖
-  updateLabelsPosition();
+  // 切換特定圖標的顯示
+  document.getElementById('toggle-specific-marker').addEventListener('change', function(event) {
+    if (event.target.checked) {
+      specificMarker.addTo(map);
+    } else {
+      map.removeLayer(specificMarker);
+    }
+  });
 </script>
 
 </body>
