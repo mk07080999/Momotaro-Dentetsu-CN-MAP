@@ -82,7 +82,7 @@
 
   // 添加自訂圖片圖層
   var bounds = [[0, 0], [1000, 1000]];
-  L.imageOverlay('https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/MAP_4_4.png', bounds).addTo(map);
+  L.imageOverlay('https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/MAP_SVG_4.0.svg', bounds).addTo(map);
 
   // 使用自訂樣式的 divIcon，讓圖標大小符合文字並使定位基於文字的長度
   function createCustomIcon(label, fontSize = 10) {
@@ -116,8 +116,48 @@
 
   // 標記的座標和對應資訊
   var positions = [
-    { coords: [706.14, 715.29], label: '標記1', info: '這是標記1的專屬資訊' },
-    { coords: [705, 686], label: '標記2', info: '這是標記2的專屬資訊' },
+//
+{ coords: [508.51, 686.61], label: '喜多方', info: '' },
+{ coords: [508.64, 696.37], label: '会津若松', info: '' },
+{ coords: [508.56, 715.87], label: '郡山', info: '' },
+{ coords: [498.84, 725.68], label: 'いわき', info: '' },
+{ coords: [548.50, 675.87], label: '鶴岡', info: '' },
+{ coords: [558.27, 675.82], label: '酒田', info: '' },
+{ coords: [558.40, 715.96], label: '鳴子', info: '' },
+{ coords: [548.46, 735.89], label: '登米', info: '' },
+{ coords: [538.29, 694.79], label: '天童', info: '' },
+{ coords: [528.00, 694.88], label: '山形', info: '' },
+{ coords: [518.32, 694.83], label: '米沢', info: '' },
+{ coords: [518.37, 715.92], label: '福島', info: '' },
+{ coords: [538.38, 725.68], label: '仙台', info: '' },
+{ coords: [528.13, 725.68], label: '名取', info: '' },
+{ coords: [538.39, 745.12], label: '松島', info: '' },
+{ coords: [548.15, 745.17], label: '石巻', info: '' },
+{ coords: [548.19, 755.46], label: '女川', info: '' },
+{ coords: [606.57, 685.19], label: '秋田', info: '' },
+{ coords: [596.24, 704.64], label: '横手', info: '' },
+{ coords: [586.60, 694.78], label: '角館', info: '' },
+{ coords: [606.49, 725.63], label: '盛岡', info: '' },
+{ coords: [596.33, 725.63], label: '花巻', info: '' },
+{ coords: [576.80, 725.63], label: '平泉', info: '' },
+{ coords: [596.38, 735.89], label: '遠野', info: '' },
+{ coords: [596.38, 753.96], label: '釜石', info: '' },
+{ coords: [576.89, 753.79], label: '大船渡', info: '' },
+{ coords: [567.04, 753.92], label: '気仙沼', info: '' },
+{ coords: [616.74, 754.18], label: '久慈', info: '' },
+{ coords: [616.74, 734.87], label: '三戸', info: '' },
+{ coords: [625.80, 734.95], label: '八戸', info: '' },
+{ coords: [635.61, 734.73], label: '三沢', info: '' },
+{ coords: [625.80, 724.61], label: '田子', info: '' },
+{ coords: [655.63, 734.91], label: '菜の花', info: '' },
+{ coords: [665.83, 734.95], label: 'むつ', info: '' },
+{ coords: [685.80, 725.19], label: '大間', info: '' },
+{ coords: [645.37, 714.45], label: '青森', info: '' },
+{ coords: [635.65, 704.63], label: '黒石', info: '' },
+{ coords: [635.47, 695.44], label: '弘前', info: '' },
+{ coords: [645.41, 695.44], label: '五所川原', info: '' },
+{ coords: [655.04, 695.44], label: '金木', info: '' },
+{ coords: [674.62, 695.13], label: '竜飛', info: '' },
   //
 { coords: [528.04, 666.10], label: '村上', info: '' },
 { coords: [531.57, 588.89], label: '佐渡', info: '' },
@@ -165,16 +205,16 @@
 { coords: [420.82, 539.17], label: '高山', info: '' },
 { coords: [410.30, 509.61], label: '郡上', info: '' },
 { coords: [390.86, 509.61], label: '岐阜', info: '' },
-{ coords: [371.37, 529.19], label: '標記22', info: '' },
-{ coords: [371.37, 548.90], label: '標記23', info: '' },
-{ coords: [361.60, 509.70], label: '標記24', info: '' },
-{ coords: [361.60, 519.47], label: '標記25', info: '' },
-{ coords: [361.56, 529.68], label: '標記26', info: '' },
-{ coords: [361.65, 538.96], label: '標記27', info: '' },
-{ coords: [351.40, 499.93], label: '標記28', info: '' },
-{ coords: [351.88, 519.47], label: '標記29', info: '' },
-{ coords: [351.84, 529.90], label: '標記30', info: '' },
-{ coords: [332.35, 509.70], label: '標記31', info: '' },
+{ coords: [371.37, 529.19], label: '土岐', info: '' },
+{ coords: [371.37, 548.90], label: '中津川', info: '' },
+{ coords: [361.60, 509.70], label: '名古屋', info: '' },
+{ coords: [361.60, 519.47], label: '栄', info: '' },
+{ coords: [361.56, 529.68], label: '豊田', info: '' },
+{ coords: [361.65, 538.96], label: '瀬戸', info: '' },
+{ coords: [351.40, 499.93], label: '名古屋港', info: '' },
+{ coords: [351.88, 519.47], label: '安城', info: '' },
+{ coords: [351.84, 529.90], label: '岡崎', info: '' },
+{ coords: [332.35, 509.70], label: '常滑', info: '' },
   //
   { coords: [469.56, 637.91], label: '草津', info: '' },
 { coords: [469.60, 647.63], label: '沼田', info: '' },
