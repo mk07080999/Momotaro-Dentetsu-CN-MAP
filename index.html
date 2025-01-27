@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>自訂圖標示例</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.fullscreen/1.6.0/Control.FullScreen.css" />
   <style>
     #map {
       height: 600px;
@@ -14,8 +15,8 @@
     .scroll-map-div-icon-label {
       background-color: rgba(210, 34, 34, 0.91);
       color: white;
-      padding: 5px;
-      border-radius: 5px;
+      padding: 4px;
+      border-radius: 10px;
       white-space: nowrap;
       text-align: center;
     }
@@ -28,16 +29,6 @@
       padding: 5px;
       border-radius: 5px;
       font-size: 14px;
-    }
-    #fullscreen-button {
-      padding: 10px;
-      border: 1px solid #aaa;
-      border-radius: 5px;
-      background-color: #f8f9fa;
-      cursor: pointer;
-    }
-    #fullscreen-button:hover {
-      background-color: #e2e6ea;
     }
     #mouse-click-records {
       margin-top: 20px;
@@ -65,7 +56,6 @@
       <input type="checkbox" id="toggle-specific-marker" checked>
       顯示特定圖標
     </label>
-    <button id="fullscreen-button">切換全螢幕</button>
   </div>
   <div id="map"></div>
 
@@ -76,69 +66,136 @@
 </main>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.fullscreen/1.6.0/Control.FullScreen.min.js"></script>
 <script>
   // 初始化地圖
   var map = L.map('map', {
     crs: L.CRS.Simple,
-    minZoom: -1,
     zoomDelta: 1,
     maxZoom: 4.5,
-    minZoom: -1
+    minZoom: -1,
+    fullscreenControl: true, // 啟用全螢幕控制
+    fullscreenControlOptions: {
+      position: 'topleft' // 按鈕位置，可選 "topleft" 或 "topright"
+    }
   }).setView([0, 0], 0);
 
   // 添加自訂圖片圖層
   var bounds = [[0, 0], [1000, 1000]];
-  L.imageOverlay('https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/MAP_4_3.png', bounds).addTo(map);
+  L.imageOverlay('https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/MAP_4_4.png', bounds).addTo(map);
 
   // 使用自訂樣式的 divIcon，讓圖標大小符合文字並使定位基於文字的長度
-function createCustomIcon(label, fontSize = 10) { // 將默認字體大小從10調小到8
-  var textWidth = label.length * fontSize * 0.8; // 減小文字寬度的比例
-  var width = Math.max(40, textWidth + 10); // 圖標寬度減少
-  var height = Math.max(15, fontSize + 5); // 圖標高度減少
+  function createCustomIcon(label, fontSize = 10) {
+    var textWidth = label.length * fontSize * 0.8;
+    var width = Math.max(20, textWidth + 5);
+    var height = Math.max(15, fontSize + 1);
 
-  var iconAnchorX = width / 2; // 水平方向置中
-  var iconAnchorY = height / 2; // 垂直方向置中
+    var iconAnchorX = width / 2;
+    var iconAnchorY = height / 2;
 
-  return L.divIcon({
-    className: 'scroll-map-div-icon-label',
-    html: `<div style="
-      background-color: rgba(210, 34, 34, 0.91);
-      color: white;
-      padding: 20; /* 減小內邊距 */
-      border-radius: 20; /* 減小圓角 */
-      font-size: ${fontSize}px; /* 使用更小的字體 */
-      width: ${width}px;
-      height: ${height}px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-sizing: border-box;
-      text-align: center;
-    ">${label}</div>`,
-    iconSize: [width, height],
-    iconAnchor: [iconAnchorX, iconAnchorY]
-  });
-}
+    return L.divIcon({
+      className: 'scroll-map-div-icon-label',
+      html: `<div style="
+        background-color: rgba(210, 34, 34, 0.91);
+        color: white;
+        padding: 20;
+        border-radius: 20;
+        font-size: ${fontSize}px;
+        width: ${width}px;
+        height: ${height}px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        text-align: center;
+      ">${label}</div>`,
+      iconSize: [width, height],
+      iconAnchor: [iconAnchorX, iconAnchorY]
+    });
+  }
 
   // 標記的座標和對應資訊
   var positions = [
     { coords: [706.14, 715.29], label: '標記1', info: '這是標記1的專屬資訊' },
     { coords: [705, 686], label: '標記2', info: '這是標記2的專屬資訊' },
-    { coords: [714.86, 714.86], label: '標記3', info: '這是標記3的專屬資訊' },
-    { coords: [690, 640], label: '標記4', info: '這是標記4的專屬資訊' },
-   { coords: [741.09, 753.48], label: '標記', info: '這是標記2的專屬資訊' },
-  { coords: [910.79, 798.05], label: '標 記', info: '這是標記1的專屬資訊' },
-  { coords: [926.15, 729.94], label: '標記1', info: '這是標記1的專屬資訊' },
   //
-{ coords: [498.81, 725.59], label: 'x標記1', info: '' },
-{ coords: [508.53, 715.91], label: 'x標記2', info: '' },
-{ coords: [479.36, 647.67], label: 'x標記3', info: '' },
-{ coords: [459.74, 637.85], label: 'x標記4', info: '' },
-{ coords: [411.13, 597.59], label: 'x標記5', info: '' },
-{ coords: [400.88, 607.94], label: 'x標記6', info: '' },
-{ coords: [342.32, 618.90], label: 'xx標記7', info: '' },
+{ coords: [528.04, 666.10], label: '村上', info: '' },
+{ coords: [531.57, 588.89], label: '佐渡', info: '' },
+{ coords: [508.57, 647.62], label: '新潟', info: '' },
+{ coords: [498.81, 647.67], label: '長岡', info: '' },
+{ coords: [489.09, 657.35], label: '魚沼', info: '' },
+{ coords: [479.36, 647.67], label: '湯沢', info: '' },
+{ coords: [479.36, 597.68], label: '上越', info: '' },
+{ coords: [469.55, 607.89], label: '長野', info: '' },
+{ coords: [469.64, 618.10], label: '小布施', info: '' },
+{ coords: [459.88, 607.80], label: '千曲', info: '' },
+{ coords: [459.83, 637.99], label: '軽井沢', info: '' },
+{ coords: [440.34, 607.84], label: '上田', info: '' },
+{ coords: [420.85, 597.63], label: '小淵沢', info: '' },
+{ coords: [411.18, 597.63], label: '甲府', info: '' },
+{ coords: [400.79, 607.93], label: '富士吉田', info: '' },
+{ coords: [322.87, 540.68], label: '豊橋', info: '' },
+{ coords: [322.92, 550.40], label: '浜松', info: '' },
+{ coords: [342.36, 578.11], label: '静岡', info: '' },
+{ coords: [342.40, 589.74], label: '富士宮', info: '' },
+{ coords: [342.31, 609.14], label: '三島', info: '' },
+{ coords: [342.36, 618.91], label: '熱海', info: '' },
+{ coords: [332.64, 609.19], label: '修善寺', info: '' },
+{ coords: [322.83, 599.42], label: '松崎', info: '' },
+{ coords: [322.88, 618.95], label: '伊豆高原', info: '' },
+{ coords: [302.82, 609.10], label: '下田', info: '' },
+{ coords: [411.10, 450.91], label: '小浜', info: '' },
+{ coords: [411.05, 470.32], label: '敦賀', info: '' },
+{ coords: [420.91, 490.16], label: '鯖江', info: '' },
+{ coords: [430.54, 500.11], label: '福井', info: '' },
+{ coords: [430.58, 509.88], label: '小松', info: '' },
+{ coords: [440.39, 500.15], label: '東尋坊', info: '' },
+{ coords: [440.35, 509.88], label: '金沢', info: '' },
+{ coords: [440.30, 519.65], label: '香林坊', info: '' },
+{ coords: [440.39, 529.42], label: '茶屋街', info: '' },
+{ coords: [479.36, 519.65], label: '和倉温泉', info: '' },
+{ coords: [468.10, 519.65], label: '氷見', info: '' },
+{ coords: [468.14, 539.19], label: '射水', info: '' },
+{ coords: [459.88, 529.37], label: '高岡', info: '' },
+{ coords: [459.88, 539.10], label: '富山', info: '' },
+{ coords: [469.60, 578.04], label: '糸魚川', info: '' },
+{ coords: [459.93, 578.12], label: '白馬', info: '' },
+{ coords: [430.59, 578.12], label: '松本', info: '' },
+{ coords: [411.05, 578.08], label: '駒ヶ根', info: '' },
+{ coords: [420.82, 539.17], label: '高山', info: '' },
+{ coords: [410.30, 509.61], label: '郡上', info: '' },
+{ coords: [390.86, 509.61], label: '岐阜', info: '' },
+{ coords: [371.37, 529.19], label: '標記22', info: '' },
+{ coords: [371.37, 548.90], label: '標記23', info: '' },
+{ coords: [361.60, 509.70], label: '標記24', info: '' },
+{ coords: [361.60, 519.47], label: '標記25', info: '' },
+{ coords: [361.56, 529.68], label: '標記26', info: '' },
+{ coords: [361.65, 538.96], label: '標記27', info: '' },
+{ coords: [351.40, 499.93], label: '標記28', info: '' },
+{ coords: [351.88, 519.47], label: '標記29', info: '' },
+{ coords: [351.84, 529.90], label: '標記30', info: '' },
+{ coords: [332.35, 509.70], label: '標記31', info: '' },
   //
-  { coords: [342.38, 628.62], label: '湯河原', info: '' },
+  { coords: [469.56, 637.91], label: '草津', info: '' },
+{ coords: [469.60, 647.63], label: '沼田', info: '' },
+{ coords: [459.79, 647.63], label: '高崎', info: '' },
+{ coords: [450.07, 647.63], label: '深谷', info: '' },
+{ coords: [450.07, 657.36], label: '熊谷', info: '' },
+{ coords: [440.35, 667.17], label: 'さいたま', info: '' },
+{ coords: [430.72, 667.17], label: '上野', info: '' },
+{ coords: [420.91, 667.13], label: '秋葉原', info: '' },
+{ coords: [430.58, 676.90], label: '浅草', info: '' },
+{ coords: [440.35, 706.15], label: '土浦', info: '' },
+{ coords: [459.84, 706.19], label: '笠間', info: '' },
+{ coords: [459.89, 715.91], label: '水戸', info: '' },
+{ coords: [469.56, 715.91], label: 'ひたちなか', info: '' },
+{ coords: [489.14, 725.68], label: '北茨城', info: '' },
+{ coords: [489.14, 706.14], label: '那須', info: '' },
+{ coords: [479.33, 686.65], label: '宇都宮', info: '' },
+{ coords: [459.93, 676.93], label: '栃木', info: '' },
+{ coords: [459.84, 667.12], label: '桐生', info: '' },
+{ coords: [459.88, 657.44], label: '前橋', info: '' },
+{ coords: [342.38, 628.62], label: '湯河原', info: '' },
 { coords: [352.10, 628.66], label: '小田原', info: '' },
 { coords: [362.35, 618.36], label: '箱根', info: '' },
 { coords: [361.91, 637.90], label: '小田原', info: '' },
@@ -169,7 +226,7 @@ function createCustomIcon(label, fontSize = 10) { // 將默認字體大小從10�
 { coords: [272.33, 657.49], label: '伊豆大島', info: '' },
 { coords: [189.60, 673.88], label: '八丈島', info: '' },
 { coords: [58.88, 919.65], label: 'ホノルル', info: '' },
-  //
+    //
 { coords: [331.80, 490.62], label: '四日市', info: '' },
 { coords: [312.27, 490.62], label: '津', info: '' },
 { coords: [302.55, 490.62], label: '松阪', info: '' },
@@ -214,107 +271,8 @@ function createCustomIcon(label, fontSize = 10) { // 將默認字體大小從10�
 { coords: [351.19, 373.25], label: '姫路', info: '' },
 { coords: [342.60, 363.19], label: '赤穂', info: '' },
   //
-{ coords: [342.54, 353.28], label: '日生', info: '' },
-{ coords: [351.38, 343.65], label: '岡山', info: '' },
-{ coords: [351.38, 333.93], label: '倉敷', info: '' },
-{ coords: [334.63, 314.88], label: '福山', info: '' },
-{ coords: [323.90, 314.84], label: '鞆の浦', info: '' },
-{ coords: [334.63, 304.89], label: '尾道', info: '' },
-{ coords: [325.13, 285.36], label: '呉', info: '' },
-{ coords: [334.85, 285.36], label: '広島', info: '' },
-{ coords: [334.89, 275.64], label: '宮島', info: '' },
-{ coords: [325.13, 275.64], label: '岩国', info: '' },
-{ coords: [325.04, 265.88], label: '柳井', info: '' },
-{ coords: [325.10, 246.12], label: '宇部', info: '' },
-{ coords: [334.77, 246.12], label: '山口', info: '' },
-{ coords: [343.12, 246.08], label: '湯田温泉', info: '' },
-{ coords: [352.93, 246.17], label: '津和野', info: '' },
-{ coords: [362.65, 236.45], label: '萩', info: '' },
-{ coords: [370.87, 226.68], label: '仙崎', info: '' },
-{ coords: [343.12, 206.88], label: '下関', info: '' },
-{ coords: [362.60, 265.66], label: '浜田', info: '' },
-{ coords: [380.63, 294.91], label: '石見銀山', info: '' },
-{ coords: [409.84, 304.68], label: '出雲', info: '' },
-{ coords: [400.08, 324.12], label: '松江', info: '' },
-{ coords: [400.08, 333.89], label: '安来', info: '' },
-{ coords: [409.89, 333.93], label: '大根島', info: '' },
-{ coords: [409.84, 343.69], label: '境港', info: '' },
-{ coords: [390.32, 353.34], label: '蒜山', info: '' },
-  //
-{ coords: [243.64, 295.48], label: '土佐清水', info: '' },
-{ coords: [253.36, 295.61], label: '四万十川', info: '' },
-{ coords: [272.98, 276.03], label: '宇和島', info: '' },
-{ coords: [301.21, 285.40], label: '松山', info: '' },
-{ coords: [301.17, 295.08], label: '道後', info: '' },
-{ coords: [309.87, 295.04], label: '今治', info: '' },
-{ coords: [318.18, 295.21], label: '大三島', info: '' },
-{ coords: [318.18, 304.85], label: '生口島', info: '' },
-{ coords: [302.71, 333.88], label: '四国中央', info: '' },
-{ coords: [322.16, 343.60], label: '坂出', info: '' },
-{ coords: [322.20, 353.41], label: '高松', info: '' },
-{ coords: [322.16, 363.13], label: 'さぬき', info: '' },
-{ coords: [302.71, 363.09], label: '鳴門', info: '' },
-{ coords: [292.95, 363.04], label: '徳島', info: '' },
-{ coords: [263.21, 344.13], label: '安芸', info: '' },
-{ coords: [272.93, 323.89], label: '高知', info: '' },
-{ coords: [272.93, 305.46], label: '須崎', info: '' },
-  //
- { coords: [313.42, 187.24], label: '博多', info: '' },
-{ coords: [313.38, 177.61], label: '中州', info: '' },
-{ coords: [313.38, 158.08], label: '唐津', info: '' },
-{ coords: [323.72, 167.84], label: '糸島', info: '' },
-{ coords: [342.94, 168.95], label: '壱岐', info: '' },
-{ coords: [361.46, 128.65], label: '対馬', info: '' },
-{ coords: [284.48, 86.31], label: '五島', info: '' },
- { coords: [284.11, 187.34], label: '久留米', info: '' },
-{ coords: [284.16, 206.82], label: '日田', info: '' },
-{ coords: [284.11, 216.63], label: '湯布院', info: '' },
-{ coords: [284.16, 226.35], label: '大分', info: '' },
-{ coords: [303.65, 226.44], label: '中津', info: '' },
-{ coords: [303.65, 197.15], label: '小倉', info: '' },
-{ coords: [303.69, 187.38], label: '博多', info: '' },
-{ coords: [303.65, 148.40], label: '伊万里', info: '' },
-{ coords: [303.69, 138.24], label: '佐世保', info: '' },
-{ coords: [323.66, 216.64], label: '門司港', info: '' },
-{ coords: [313.32, 206.96], label: '小倉', info: '' },
-{ coords: [253.49, 158.12], label: '天草', info: '' },
-{ coords: [263.70, 187.29], label: '熊本', info: '' },
-{ coords: [273.82, 226.39], label: '竹田', info: '' },
-{ coords: [274.13, 147.91], label: '長崎', info: '' },
-{ coords: [274.39, 158.25], label: '茂木', info: '' },
-{ coords: [284.38, 158.16], label: '諫早', info: '' },
-{ coords: [293.88, 148.44], label: '有田', info: '' },
-{ coords: [293.92, 168.06], label: '小城', info: '' },
-{ coords: [293.79, 177.78], label: '佐賀', info: '' },
-{ coords: [293.92, 187.63], label: '鳥栖', info: '' },
-{ coords: [293.84, 197.27], label: '秋月', info: '' },
-{ coords: [293.88, 226.48], label: '別府', info: '' },
-  //
-{ coords: [185.22, 168.73], label: '枕崎', info: '' },
-{ coords: [194.94, 168.55], label: '知覧', info: '' },
-{ coords: [204.74, 178.27], label: '鹿児島', info: '' },
-{ coords: [194.85, 188.35], label: '桜島', info: '' },
-{ coords: [184.86, 198.07], label: '鹿屋', info: '' },
-{ coords: [204.66, 208.23], label: '都城', info: '' },
-{ coords: [214.91, 218.13], label: '宮崎', info: '' },
-{ coords: [223.57, 218.04], label: '西都', info: '' },
-{ coords: [234.66, 168.81], label: '水俣', info: '' },
-{ coords: [243.14, 178.58], label: '八代', info: '' },
-{ coords: [234.48, 188.34], label: '人吉', info: '' },
-  //
-{ coords: [48.44, 25.36], label: '石垣島', info: '' },
-{ coords: [48.66, 57.88], label: '宮古島', info: '' },
-{ coords: [112.43, 45.03], label: '久米島', info: '' },
-{ coords: [77.74, 108.70], label: '那覇', info: '' },
-{ coords: [89.01, 131.68], label: 'うるま', info: '' },
-{ coords: [98.77, 131.55], label: '金武', info: '' },
-{ coords: [108.45, 121.97], label: '本部', info: '' },
-{ coords: [108.45, 131.65], label: '名護', info: '' },
-{ coords: [127.01, 131.65], label: '大宜味', info: '' },
-{ coords: [100.98, 184.15], label: '奄美大島', info: '' },
-{ coords: [139.70, 196.97], label: '屋久島', info: '' },
-{ coords: [138.20, 215.57], label: '種子島', info: '' },
-  ];  
+  ];
+  
   // 添加特定標記
   specificMarker = L.marker([500, 500], { icon: createCustomIcon('特定標記') }).addTo(map);
   specificMarker.bindPopup(''); // 預設為空資訊
@@ -330,7 +288,7 @@ function createCustomIcon(label, fontSize = 10) { // 將默認字體大小從10�
   // 縮放事件處理
   map.on('zoomend', function () {
     var currentZoom = map.getZoom();
-    var fontSize = Math.max(16, Math.min(12, currentZoom * 4)); // 根據縮放級別調整字體大小
+    var fontSize = Math.max(12, Math.min(10, currentZoom * 1));
     allMarkers.forEach((marker, index) => {
       var pos = positions[index];
       var newIcon = createCustomIcon(pos.label, fontSize);
@@ -364,7 +322,7 @@ function createCustomIcon(label, fontSize = 10) { // 將默認字體大小從10�
   // 更新顯示所有的滑鼠點擊位置
   function updateClickPositionsDisplay() {
     var positionsList = document.getElementById('mouse-click-records');
-    positionsList.innerHTML = ''; // 清空原來的記錄
+    positionsList.innerHTML = '';
     mouseClickPositions.forEach(function(position, index) {
       var listItem = document.createElement('li');
       listItem.textContent = `{ coords: [${position.lat}, ${position.lng}], label: '標記${index + 1}', info: '' },`;
@@ -382,18 +340,6 @@ function createCustomIcon(label, fontSize = 10) { // 將默認字體大小從10�
         map.removeLayer(marker);
       }
     });
-  });
-
-  // 切換全螢幕功能
-  var mapContainer = document.getElementById('map');
-  var fullscreenButton = document.getElementById('fullscreen-button');
-
-  fullscreenButton.addEventListener('click', function() {
-    if (!document.fullscreenElement) {
-      mapContainer.requestFullscreen();
-    } else {
-      document.exitFullscreen();
-    }
   });
 </script>
 
