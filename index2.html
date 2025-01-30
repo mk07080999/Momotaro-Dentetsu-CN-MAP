@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,529 +13,1022 @@
       border: 2px solid rgba(51, 51, 51, 0.31);
     }
     .scroll-map-div-icon-label {
-      background-color: rgba(210, 34, 34, 0.91);
       color: white;
       padding: 4px;
       border-radius: 10px;
       white-space: nowrap;
       text-align: center;
     }
-    #controls {
-      margin: 10px 0;
-    }
-    #mouse-position {
-      display: inline-block;
-      background-color: rgba(255, 255, 255, 0.7);
-      padding: 5px;
+    .leaflet-control-layers {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px;
       border-radius: 5px;
-      font-size: 14px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
     }
-    #mouse-click-records {
-      margin-top: 20px;
-      list-style-type: none;
-      padding: 0;
-    }
-    #mouse-click-records li {
-      padding: 5px;
-      background-color: #f8f9fa;
-      margin: 5px 0;
-      border-radius: 5px;
+    .leaflet-top.leaflet-right {
+      top: 10px;
+      right: 10px;
     }
   </style>
 </head>
 <body>
-
-<main>
-  <h1>自訂圖標示例 <span id="mouse-position">滑鼠位置：-</span></h1>
-  <div id="controls">
-    <label>
-      <input type="checkbox" id="toggle-all-markers" checked>
-      顯示所有圖標
-    </label>
-    <label>
-      <input type="checkbox" id="toggle-specific-marker" checked>
-      顯示特定圖標
-    </label>
-  </div>
   <div id="map"></div>
 
-  <div>
-    <h3>滑鼠點擊記錄：</h3>
-    <ul id="mouse-click-records"></ul>
-  </div>
-</main>
-
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.fullscreen/1.6.0/Control.FullScreen.min.js"></script>
-<script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.fullscreen/1.6.0/Control.FullScreen.min.js"></script>
+  <script>
   // 初始化地圖
   var map = L.map('map', {
     crs: L.CRS.Simple,
-    zoomDelta: 1,
-    maxZoom: 4.5,
+    zoomDelta: 1.5,
+    maxZoom: 2.5,
     minZoom: -1,
-    fullscreenControl: true, // 啟用全螢幕控制
-    fullscreenControlOptions: {
-      position: 'topleft' // 按鈕位置，可選 "topleft" 或 "topright"
-    }
-  }).setView([0, 0], 0);
+    fullscreenControl: true
+  }).setView([300, 400],-0.5);
 
   // 添加自訂圖片圖層
   var bounds = [[0, 0], [1000, 1000]];
-  L.imageOverlay('https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/MAP_SVG_4.0.svg', bounds).addTo(map);
+  L.imageOverlay('https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/MAP_SVG_4.03.svg', bounds).addTo(map);
 
-  // 使用自訂樣式的 divIcon，讓圖標大小符合文字並使定位基於文字的長度
-  function createCustomIcon(label, fontSize = 10) {
+  // 組別顏色設定
+  var groupColors = {
+    'A': 'rgba(34, 139, 34, 1)', // 北海道-森林綠色
+    'B': 'rgba(70, 130, 180, 1)', // 東北-鋼藍色
+    'C': 'rgba(139, 0, 0, 1)',    // 關東-暗紅色
+    'D': 'rgba(75, 0, 130, 1)',   // 中部-深紫色
+    'E': 'rgba(184, 115, 51, 1)', // 近畿-古銅色
+    'F': 'rgba(0, 128, 128, 1)',  // 中國-深藍綠色
+    'G': 'rgba(25, 25, 112, 1)',  // 四國-濃青色
+    'H': 'rgba(178, 34, 34, 1)',  // 九州沖繩-玫瑰紅色
+    'I': 'rgba(0, 33, 33, 1)'   // 九州沖繩-玫瑰紅色
+  };
+
+  // 使用自訂樣式的 divIcon
+  function createCustomIcon(label, fontSize = 10, backgroundColor = 'rgba(210, 34, 34, 0.91)') {
     var textWidth = label.length * fontSize * 0.8;
     var width = Math.max(20, textWidth + 5);
     var height = Math.max(15, fontSize + 1);
-
     var iconAnchorX = width / 2;
     var iconAnchorY = height / 2;
 
     return L.divIcon({
       className: 'scroll-map-div-icon-label',
-      html: `<div style="
-        background-color: rgba(210, 34, 34, 0.91);
-        color: white;
-        padding: 20;
-        border-radius: 20;
-        font-size: ${fontSize}px;
-        width: ${width}px;
-        height: ${height}px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-sizing: border-box;
-        text-align: center;
-      ">${label}</div>`,
+      html: `<div style="font-size: ${fontSize}px; width: ${width}px; height: ${height}px; background-color: ${backgroundColor};">${label}</div>`,
       iconSize: [width, height],
       iconAnchor: [iconAnchorX, iconAnchorY]
     });
   }
 
-  // 標記的座標和對應資訊
-  var positions = [
-//
-{ coords: [695.31, 685.19], label: '松前', info: '' },
-{ coords: [704.94, 685.28], label: '江差', info: '' },
-{ coords: [704.99, 714.67], label: '函館', info: '' },
-{ coords: [714.75, 714.63], label: '森', info: '' },
-{ coords: [734.33, 704.86], label: '八雲', info: '' },
-{ coords: [763.54, 704.86], label: '長万部', info: '' },
-{ coords: [763.58, 734.12], label: '洞爺湖', info: '' },
-{ coords: [753.77, 753.66], label: '登別', info: '' },
-{ coords: [753.77, 763.38], label: '苫小牧', info: '' },
-{ coords: [741.05, 753.66], label: '室蘭', info: '' },
-{ coords: [714.04, 827.68], label: '襟裳', info: '' },
-{ coords: [783.03, 724.35], label: 'ニセコ', info: '' },
-{ coords: [802.51, 724.40], label: '余市', info: '' },
-{ coords: [802.64, 742.26], label: '小樽', info: '' },
-{ coords: [802.69, 763.43], label: '札幌', info: '' },
-{ coords: [786.12, 753.70], label: '定山渓', info: '' },
-{ coords: [794.33, 763.43], label: 'ススキノ', info: '' },
-{ coords: [792.79, 792.64], label: '夕張', info: '' },
-{ coords: [812.36, 802.45], label: '砂川', info: '' },
-{ coords: [851.39, 782.96], label: '増毛', info: '' },
-{ coords: [861.06, 782.87], label: '留萌', info: '' },
-{ coords: [822.13, 813.24], label: '富良野', info: '' },
-{ coords: [835.39, 813.11], label: '美瑛', info: '' },
-{ coords: [851.42, 813.15], label: '旭川', info: '' },
-{ coords: [861.58, 813.11], label: '和寒', info: '' },
-{ coords: [891.36, 813.11], label: '名寄', info: '' },
-{ coords: [910.80, 798.43], label: '天塩', info: '' },
-{ coords: [920.43, 828.44], label: '浜頓別', info: '' },
-{ coords: [960.07, 798.39], label: '稚内', info: '' },
-{ coords: [952.55, 731.21], label: '礼文', info: '' },
-{ coords: [924.36, 758.17], label: '利尻', info: '' },
-{ coords: [891.35, 842.37], label: '興部', info: '' },
-{ coords: [871.78, 852.13], label: '紋別', info: '' },
-{ coords: [861.66, 871.10], label: '遠軽', info: '' },
-{ coords: [851.36, 842.37], label: '上川', info: '' },
-{ coords: [851.23, 871.23], label: '北見', info: '' },
-{ coords: [851.27, 900.44], label: '美幌', info: '' },
-{ coords: [851.32, 910.26], label: '網走', info: '' },
-{ coords: [851.27, 930.72], label: '斜里', info: '' },
-{ coords: [861.61, 941.02], label: '羅臼', info: '' },
-{ coords: [822.11, 871.14], label: '陸別', info: '' },
-{ coords: [822.20, 886.70], label: '阿寒', info: '' },
-{ coords: [822.11, 910.62], label: '摩周', info: '' },
-{ coords: [822.06, 930.64], label: '中標津', info: '' },
-{ coords: [802.62, 861.42], label: '足寄', info: '' },
-{ coords: [812.39, 930.68], label: '別海', info: '' },
-{ coords: [791.26, 940.89], label: '根室', info: '' },
-{ coords: [750.88, 831.59], label: '中札内', info: '' },
-{ coords: [760.55, 831.77], label: '芽室', info: '' },
-{ coords: [760.60, 841.32], label: '帯広', info: '' },
-{ coords: [760.55, 861.38], label: '池田', info: '' },
-{ coords: [771.42, 900.94], label: '釧路', info: '' },
-{ coords: [771.47, 930.64], label: '厚岸', info: '' },
-  //
-{ coords: [508.51, 686.61], label: '喜多方', info: '' },
-{ coords: [508.64, 696.37], label: '会津若松', info: '' },
-{ coords: [508.56, 715.87], label: '郡山', info: '' },
-{ coords: [498.84, 725.68], label: 'いわき', info: '' },
-{ coords: [548.50, 675.87], label: '鶴岡', info: '' },
-{ coords: [558.27, 675.82], label: '酒田', info: '' },
-{ coords: [558.40, 715.96], label: '鳴子', info: '' },
-{ coords: [548.46, 735.89], label: '登米', info: '' },
-{ coords: [538.29, 694.79], label: '天童', info: '' },
-{ coords: [528.00, 694.88], label: '山形', info: '' },
-{ coords: [518.32, 694.83], label: '米沢', info: '' },
-{ coords: [518.37, 715.92], label: '福島', info: '' },
-{ coords: [538.38, 725.68], label: '仙台', info: '' },
-{ coords: [528.13, 725.68], label: '名取', info: '' },
-{ coords: [538.39, 745.12], label: '松島', info: '' },
-{ coords: [548.15, 745.17], label: '石巻', info: '' },
-{ coords: [548.19, 755.46], label: '女川', info: '' },
-{ coords: [606.57, 685.19], label: '秋田', info: '' },
-{ coords: [596.24, 704.64], label: '横手', info: '' },
-{ coords: [586.60, 694.78], label: '角館', info: '' },
-{ coords: [606.49, 725.63], label: '盛岡', info: '' },
-{ coords: [596.33, 725.63], label: '花巻', info: '' },
-{ coords: [576.80, 725.63], label: '平泉', info: '' },
-{ coords: [596.38, 735.89], label: '遠野', info: '' },
-{ coords: [596.38, 753.96], label: '釜石', info: '' },
-{ coords: [576.89, 753.79], label: '大船渡', info: '' },
-{ coords: [567.04, 753.92], label: '気仙沼', info: '' },
-{ coords: [616.74, 754.18], label: '久慈', info: '' },
-{ coords: [616.74, 734.87], label: '三戸', info: '' },
-{ coords: [625.80, 734.95], label: '八戸', info: '' },
-{ coords: [635.61, 734.73], label: '三沢', info: '' },
-{ coords: [625.80, 724.61], label: '田子', info: '' },
-{ coords: [655.63, 734.91], label: '菜の花', info: '' },
-{ coords: [665.83, 734.95], label: 'むつ', info: '' },
-{ coords: [685.80, 725.19], label: '大間', info: '' },
-{ coords: [645.37, 714.45], label: '青森', info: '' },
-{ coords: [635.65, 704.63], label: '黒石', info: '' },
-{ coords: [635.47, 695.44], label: '弘前', info: '' },
-{ coords: [645.41, 695.44], label: '五所川原', info: '' },
-{ coords: [655.04, 695.44], label: '金木', info: '' },
-{ coords: [674.62, 695.13], label: '竜飛', info: '' },
-  //
-{ coords: [528.04, 666.10], label: '村上', info: '' },
-{ coords: [531.57, 588.89], label: '佐渡', info: '' },
-{ coords: [508.57, 647.62], label: '新潟', info: '' },
-{ coords: [498.81, 647.67], label: '長岡', info: '' },
-{ coords: [489.09, 657.35], label: '魚沼', info: '' },
-{ coords: [479.36, 647.67], label: '湯沢', info: '' },
-{ coords: [479.36, 597.68], label: '上越', info: '' },
-{ coords: [469.55, 607.89], label: '長野', info: '' },
-{ coords: [469.64, 618.10], label: '小布施', info: '' },
-{ coords: [459.88, 607.80], label: '千曲', info: '' },
-{ coords: [459.83, 637.99], label: '軽井沢', info: '' },
-{ coords: [440.34, 607.84], label: '上田', info: '' },
-{ coords: [420.85, 597.63], label: '小淵沢', info: '' },
-{ coords: [411.18, 597.63], label: '甲府', info: '' },
-{ coords: [400.79, 607.93], label: '富士吉田', info: '' },
-{ coords: [322.87, 540.68], label: '豊橋', info: '' },
-{ coords: [322.92, 550.40], label: '浜松', info: '' },
-{ coords: [342.36, 578.11], label: '静岡', info: '' },
-{ coords: [342.40, 589.74], label: '富士宮', info: '' },
-{ coords: [342.31, 609.14], label: '三島', info: '' },
-{ coords: [342.36, 618.91], label: '熱海', info: '' },
-{ coords: [332.64, 609.19], label: '修善寺', info: '' },
-{ coords: [322.83, 599.42], label: '松崎', info: '' },
-{ coords: [322.88, 618.95], label: '伊豆高原', info: '' },
-{ coords: [302.82, 609.10], label: '下田', info: '' },
-{ coords: [411.10, 450.91], label: '小浜', info: '' },
-{ coords: [411.05, 470.32], label: '敦賀', info: '' },
-{ coords: [420.91, 490.16], label: '鯖江', info: '' },
-{ coords: [430.54, 500.11], label: '福井', info: '' },
-{ coords: [430.58, 509.88], label: '小松', info: '' },
-{ coords: [440.39, 500.15], label: '東尋坊', info: '' },
-{ coords: [440.35, 509.88], label: '金沢', info: '' },
-{ coords: [440.30, 519.65], label: '香林坊', info: '' },
-{ coords: [440.39, 529.42], label: '茶屋街', info: '' },
-{ coords: [479.36, 519.65], label: '和倉温泉', info: '' },
-{ coords: [468.10, 519.65], label: '氷見', info: '' },
-{ coords: [468.14, 539.19], label: '射水', info: '' },
-{ coords: [459.88, 529.37], label: '高岡', info: '' },
-{ coords: [459.88, 539.10], label: '富山', info: '' },
-{ coords: [469.60, 578.04], label: '糸魚川', info: '' },
-{ coords: [459.93, 578.12], label: '白馬', info: '' },
-{ coords: [430.59, 578.12], label: '松本', info: '' },
-{ coords: [411.05, 578.08], label: '駒ヶ根', info: '' },
-{ coords: [420.82, 539.17], label: '高山', info: '' },
-{ coords: [410.30, 509.61], label: '郡上', info: '' },
-{ coords: [390.86, 509.61], label: '岐阜', info: '' },
-{ coords: [371.37, 529.19], label: '土岐', info: '' },
-{ coords: [371.37, 548.90], label: '中津川', info: '' },
-{ coords: [361.60, 509.70], label: '名古屋', info: '' },
-{ coords: [361.60, 519.47], label: '栄', info: '' },
-{ coords: [361.56, 529.68], label: '豊田', info: '' },
-{ coords: [361.65, 538.96], label: '瀬戸', info: '' },
-{ coords: [351.40, 499.93], label: '名古屋港', info: '' },
-{ coords: [351.88, 519.47], label: '安城', info: '' },
-{ coords: [351.84, 529.90], label: '岡崎', info: '' },
-{ coords: [332.35, 509.70], label: '常滑', info: '' },
-  //
-  { coords: [469.56, 637.91], label: '草津', info: '' },
-{ coords: [469.60, 647.63], label: '沼田', info: '' },
-{ coords: [459.79, 647.63], label: '高崎', info: '' },
-{ coords: [450.07, 647.63], label: '深谷', info: '' },
-{ coords: [450.07, 657.36], label: '熊谷', info: '' },
-{ coords: [440.35, 667.17], label: 'さいたま', info: '' },
-{ coords: [430.72, 667.17], label: '上野', info: '' },
-{ coords: [420.91, 667.13], label: '秋葉原', info: '' },
-{ coords: [430.58, 676.90], label: '浅草', info: '' },
-{ coords: [440.35, 706.15], label: '土浦', info: '' },
-{ coords: [459.84, 706.19], label: '笠間', info: '' },
-{ coords: [459.89, 715.91], label: '水戸', info: '' },
-{ coords: [469.56, 715.91], label: 'ひたちなか', info: '' },
-{ coords: [489.14, 725.68], label: '北茨城', info: '' },
-{ coords: [489.14, 706.14], label: '那須', info: '' },
-{ coords: [479.33, 686.65], label: '宇都宮', info: '' },
-{ coords: [459.93, 676.93], label: '栃木', info: '' },
-{ coords: [459.84, 667.12], label: '桐生', info: '' },
-{ coords: [459.88, 657.44], label: '前橋', info: '' },
-{ coords: [342.38, 628.62], label: '湯河原', info: '' },
-{ coords: [352.10, 628.66], label: '小田原', info: '' },
-{ coords: [362.35, 618.36], label: '箱根', info: '' },
-{ coords: [361.91, 637.90], label: '小田原', info: '' },
-{ coords: [352.14, 637.90], label: '湯河原', info: '' },
-{ coords: [371.59, 637.95], label: '中華街', info: '' },
-{ coords: [371.59, 647.63], label: '横浜', info: '' },
-{ coords: [371.54, 657.44], label: '川崎', info: '' },
-{ coords: [391.60, 676.93], label: 'お台場', info: '' },
-{ coords: [391.56, 657.43], label: '品川', info: '' },
-{ coords: [391.56, 647.53], label: '渋谷', info: '' },
-{ coords: [401.36, 647.62], label: '原宿', info: '' },
-{ coords: [391.69, 637.94], label: '千駄ヶ谷', info: '' },
-{ coords: [431.06, 618.10], label: '秩父', info: '' },
-{ coords: [420.86, 637.86], label: '大久保', info: '' },
-{ coords: [411.00, 618.14], label: '八王子', info: '' },
-{ coords: [411.05, 637.86], label: '新宿', info: '' },
-{ coords: [411.05, 647.63], label: '後楽園', info: '' },
-{ coords: [411.13, 667.20], label: '東京', info: '' },
-{ coords: [411.04, 676.84], label: '日本橋', info: '' },
-{ coords: [401.32, 676.89], label: '銀座', info: '' },
-{ coords: [411.04, 686.61], label: '船橋', info: '' },
-{ coords: [411.04, 696.47], label: '佐原', info: '' },
-{ coords: [401.32, 686.61], label: '幕張', info: '' },
-{ coords: [391.60, 686.61], label: '千葉', info: '' },
-{ coords: [391.60, 706.19], label: '銚子', info: '' },
-{ coords: [332.83, 686.70], label: '館山', info: '' },
-{ coords: [352.58, 706.19], label: '鴨川', info: '' },
-{ coords: [272.33, 657.49], label: '伊豆大島', info: '' },
-{ coords: [189.60, 673.88], label: '八丈島', info: '' },
-{ coords: [58.88, 919.65], label: 'ホノルル', info: '' },
-    //
-{ coords: [331.80, 490.62], label: '四日市', info: '' },
-{ coords: [312.27, 490.62], label: '津', info: '' },
-{ coords: [302.55, 490.62], label: '松阪', info: '' },
-{ coords: [292.79, 490.71], label: '伊勢', info: '' },
-{ coords: [292.83, 500.92], label: '鳥羽', info: '' },
-{ coords: [283.15, 462.69], label: '新宮', info: '' },
-{ coords: [292.87, 442.93], label: '五條', info: '' },
-{ coords: [302.59, 451.60], label: '橿原', info: '' },
-{ coords: [312.40, 461.98], label: '奈良', info: '' },
-{ coords: [322.08, 471.13], label: '伊賀', info: '' },
-{ coords: [263.62, 403.85], label: '白浜', info: '' },
-{ coords: [273.34, 403.94], label: '御坊', info: '' },
-{ coords: [283.10, 403.94], label: '和歌山', info: '' },
-{ coords: [292.82, 403.98], label: '岸和田', info: '' },
-{ coords: [302.63, 403.98], label: '堺', info: '' },
-{ coords: [312.31, 413.62], label: '天王寺', info: '' },
-{ coords: [322.16, 382.72], label: '淡路島', info: '' },
-{ coords: [331.88, 382.64], label: '明石', info: '' },
-{ coords: [331.84, 392.41], label: '神戸', info: '' },
-{ coords: [341.60, 392.36], label: '有馬', info: '' },
-{ coords: [322.12, 402.44], label: '天保山', info: '' },
-{ coords: [322.12, 413.71], label: 'なんば', info: '' },
-{ coords: [322.16, 423.43], label: '北浜', info: '' },
-{ coords: [322.12, 433.20], label: '京橋', info: '' },
-{ coords: [312.31, 433.07], label: '鶴橋', info: '' },
-{ coords: [331.84, 441.91], label: '門真', info: '' },
-{ coords: [351.33, 422.37], label: '大阪', info: '' },
-{ coords: [331.80, 413.67], label: '吹田', info: '' },
-{ coords: [401.06, 480.35], label: '長浜', info: '' },
-{ coords: [380.65, 480.31], label: '彦根', info: '' },
-{ coords: [370.75, 480.35], label: '近江八幡', info: '' },
-{ coords: [370.80, 471.11], label: '大津', info: '' },
-{ coords: [361.03, 461.39], label: '祇園', info: '' },
-{ coords: [361.03, 451.71], label: '京都', info: '' },
-{ coords: [361.03, 441.90], label: '嵐山', info: '' },
-{ coords: [411.05, 421.56], label: '舞鶴', info: '' },
-{ coords: [400.09, 372.86], label: '鳥取', info: '' },
-{ coords: [409.81, 392.31], label: '城崎', info: '' },
-{ coords: [400.05, 402.13], label: '出石', info: '' },
-{ coords: [380.60, 392.41], label: '福知山', info: '' },
-{ coords: [351.19, 392.69], label: '三田', info: '' },
-{ coords: [351.19, 373.25], label: '姫路', info: '' },
-{ coords: [342.60, 363.19], label: '赤穂', info: '' },
-  //
-  { coords: [342.54, 353.28], label: '日生', info: '' },
-{ coords: [351.38, 343.65], label: '岡山', info: '' },
-{ coords: [351.38, 333.93], label: '倉敷', info: '' },
-{ coords: [334.63, 314.88], label: '福山', info: '' },
-{ coords: [323.90, 314.84], label: '鞆の浦', info: '' },
-{ coords: [334.63, 304.89], label: '尾道', info: '' },
-{ coords: [325.13, 285.36], label: '呉', info: '' },
-{ coords: [334.85, 285.36], label: '広島', info: '' },
-{ coords: [334.89, 275.64], label: '宮島', info: '' },
-{ coords: [325.13, 275.64], label: '岩国', info: '' },
-{ coords: [325.04, 265.88], label: '柳井', info: '' },
-{ coords: [325.10, 246.12], label: '宇部', info: '' },
-{ coords: [334.77, 246.12], label: '山口', info: '' },
-{ coords: [343.12, 246.08], label: '湯田温泉', info: '' },
-{ coords: [352.93, 246.17], label: '津和野', info: '' },
-{ coords: [362.65, 236.45], label: '萩', info: '' },
-{ coords: [370.87, 226.68], label: '仙崎', info: '' },
-{ coords: [343.12, 206.88], label: '下関', info: '' },
-{ coords: [362.60, 265.66], label: '浜田', info: '' },
-{ coords: [380.63, 294.91], label: '石見銀山', info: '' },
-{ coords: [409.84, 304.68], label: '出雲', info: '' },
-{ coords: [400.08, 324.12], label: '松江', info: '' },
-{ coords: [400.08, 333.89], label: '安来', info: '' },
-{ coords: [409.89, 333.93], label: '大根島', info: '' },
-{ coords: [409.84, 343.69], label: '境港', info: '' },
-{ coords: [390.32, 353.34], label: '蒜山', info: '' },
-  //
-{ coords: [243.64, 295.48], label: '土佐清水', info: '' },
-{ coords: [253.36, 295.61], label: '四万十川', info: '' },
-{ coords: [272.98, 276.03], label: '宇和島', info: '' },
-{ coords: [301.21, 285.40], label: '松山', info: '' },
-{ coords: [301.17, 295.08], label: '道後', info: '' },
-{ coords: [309.87, 295.04], label: '今治', info: '' },
-{ coords: [318.18, 295.21], label: '大三島', info: '' },
-{ coords: [318.18, 304.85], label: '生口島', info: '' },
-{ coords: [302.71, 333.88], label: '四国中央', info: '' },
-{ coords: [322.16, 343.60], label: '坂出', info: '' },
-{ coords: [322.20, 353.41], label: '高松', info: '' },
-{ coords: [322.16, 363.13], label: 'さぬき', info: '' },
-{ coords: [302.71, 363.09], label: '鳴門', info: '' },
-{ coords: [292.95, 363.04], label: '徳島', info: '' },
-{ coords: [263.21, 344.13], label: '安芸', info: '' },
-{ coords: [272.93, 323.89], label: '高知', info: '' },
-{ coords: [272.93, 305.46], label: '須崎', info: '' },
-  //
- { coords: [313.42, 187.24], label: '博多', info: '' },
-{ coords: [313.38, 177.61], label: '中州', info: '' },
-{ coords: [313.38, 158.08], label: '唐津', info: '' },
-{ coords: [323.72, 167.84], label: '糸島', info: '' },
-{ coords: [342.94, 168.95], label: '壱岐', info: '' },
-{ coords: [361.46, 128.65], label: '対馬', info: '' },
-{ coords: [284.48, 86.31], label: '五島', info: '' },
- { coords: [284.11, 187.34], label: '久留米', info: '' },
-{ coords: [284.16, 206.82], label: '日田', info: '' },
-{ coords: [284.11, 216.63], label: '湯布院', info: '' },
-{ coords: [284.16, 226.35], label: '大分', info: '' },
-{ coords: [303.65, 226.44], label: '中津', info: '' },
-{ coords: [303.65, 197.15], label: '小倉', info: '' },
-{ coords: [303.69, 187.38], label: '博多', info: '' },
-{ coords: [303.65, 148.40], label: '伊万里', info: '' },
-{ coords: [303.69, 138.24], label: '佐世保', info: '' },
-{ coords: [323.66, 216.64], label: '門司港', info: '' },
-{ coords: [313.32, 206.96], label: '小倉', info: '' },
-{ coords: [253.49, 158.12], label: '天草', info: '' },
-{ coords: [263.70, 187.29], label: '熊本', info: '' },
-{ coords: [273.82, 226.39], label: '竹田', info: '' },
-{ coords: [274.13, 147.91], label: '長崎', info: '' },
-{ coords: [274.39, 158.25], label: '茂木', info: '' },
-{ coords: [284.38, 158.16], label: '諫早', info: '' },
-{ coords: [293.88, 148.44], label: '有田', info: '' },
-{ coords: [293.92, 168.06], label: '小城', info: '' },
-{ coords: [293.79, 177.78], label: '佐賀', info: '' },
-{ coords: [293.92, 187.63], label: '鳥栖', info: '' },
-{ coords: [293.84, 197.27], label: '秋月', info: '' },
-{ coords: [293.88, 226.48], label: '別府', info: '' },
-  //
-{ coords: [185.22, 168.73], label: '枕崎', info: '' },
-{ coords: [194.94, 168.55], label: '知覧', info: '' },
-{ coords: [204.74, 178.27], label: '鹿児島', info: '' },
-{ coords: [194.85, 188.35], label: '桜島', info: '' },
-{ coords: [184.86, 198.07], label: '鹿屋', info: '' },
-{ coords: [204.66, 208.23], label: '都城', info: '' },
-{ coords: [214.91, 218.13], label: '宮崎', info: '' },
-{ coords: [223.57, 218.04], label: '西都', info: '' },
-{ coords: [234.66, 168.81], label: '水俣', info: '' },
-{ coords: [243.14, 178.58], label: '八代', info: '' },
-{ coords: [234.48, 188.34], label: '人吉', info: '' },
-  //
-{ coords: [48.44, 25.36], label: '石垣島', info: '' },
-{ coords: [48.66, 57.88], label: '宮古島', info: '' },
-{ coords: [112.43, 45.03], label: '久米島', info: '' },
-{ coords: [77.74, 108.70], label: '那覇', info: '' },
-{ coords: [89.01, 131.68], label: 'うるま', info: '' },
-{ coords: [98.77, 131.55], label: '金武', info: '' },
-{ coords: [108.45, 121.97], label: '本部', info: '' },
-{ coords: [108.45, 131.65], label: '名護', info: '' },
-{ coords: [127.01, 131.65], label: '大宜味', info: '' },
-{ coords: [100.98, 184.15], label: '奄美大島', info: '' },
-{ coords: [139.70, 196.97], label: '屋久島', info: '' },
-{ coords: [138.20, 215.57], label: '種子島', info: '' },
-  ];
-  
-  // 添加特定標記
-  specificMarker = L.marker([500, 500], { icon: createCustomIcon('特定標記') }).addTo(map);
-  specificMarker.bindPopup(''); // 預設為空資訊
+  // 定義各組的座標和對應資訊
 
-  // 初始化標記
-  var allMarkers = [];
-  positions.forEach((pos) => {
-    var marker = L.marker(pos.coords, { icon: createCustomIcon(pos.label) }).addTo(map);
-    marker.bindPopup(pos.info); // 綁定專屬資訊
-    allMarkers.push(marker);
-  });
+  var positions = {
+    A: [
+// 北海道-森林綠色
+{ coords: [704.94, 685.28], label: '江差', info: '<table><tr><td>獨佔價格</td><td>20億4000万円</td></tr><tr><td>收益額</td><td>1億3200万円</td></tr><tr><td>收益率</td><td>6%</td></tr></table>', group: 'A' },
+{ coords: [704.99, 714.67], label: '函館', info: '<table><tr><td>獨佔價格</td><td>89億9000万円</td></tr><tr><td>收益額</td><td>13億7200万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [714.75, 714.63], label: '森', info: '<table><tr><td>獨佔價格</td><td>3000万円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>200%</td></tr></table>', group: 'A' },
+{ coords: [734.33, 704.86], label: '八雲', info: '<table><tr><td>獨佔價格</td><td>1億4000万円</td></tr><tr><td>收益額</td><td>5600万円</td></tr><tr><td>收益率</td><td>40%</td></tr></table>', group: 'A' },
+{ coords: [763.54, 704.86], label: '長万部', info: '<table><tr><td>獨佔價格</td><td>8億2000万円</td></tr><tr><td>收益額</td><td>8200万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'A' },
+{ coords: [763.58, 734.12], label: '洞爺湖', info: '<table><tr><td>獨佔價格</td><td>738億2000万円</td></tr><tr><td>收益額</td><td>43億800万円</td></tr><tr><td>收益率</td><td>6%</td></tr></table>', group: 'A' },
+{ coords: [753.77, 753.66], label: '登別', info: '<table><tr><td>獨佔價格</td><td>21億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>2%</td></tr></table>', group: 'A' },
+{ coords: [753.77, 763.38], label: '苫小牧', info: '<table><tr><td>獨佔價格</td><td>210億6000万円</td></tr><tr><td>收益額</td><td>6億4000万円</td></tr><tr><td>收益率</td><td>3%</td></tr></table>', group: 'A' },
+{ coords: [741.05, 753.66], label: '室蘭', info: '<table><tr><td>獨佔價格</td><td>60億3000万円</td></tr><tr><td>收益額</td><td>2億8200万円</td></tr><tr><td>收益率</td><td>5%</td></tr></table>', group: 'A' },
+{ coords: [714.04, 827.68], label: '襟裳', info: '<table><tr><td>獨佔價格</td><td>30億円</td></tr><tr><td>收益額</td><td>3億7800万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'A' },
+{ coords: [783.03, 724.35], label: 'ニセコ', info: '<table><tr><td>獨佔價格</td><td>320億1000万円</td></tr><tr><td>收益額</td><td>32億1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'A' },
+{ coords: [802.51, 724.40], label: '余市', info: '<table><tr><td>獨佔價格</td><td>105億円</td></tr><tr><td>收益額</td><td>9億3600万円</td></tr><tr><td>收益率</td><td>9%</td></tr></table>', group: 'A' },
+{ coords: [802.64, 742.26], label: '小樽', info: '<table><tr><td>獨佔價格</td><td>15億2000万円</td></tr><tr><td>收益額</td><td>1億7600万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'A' },
+{ coords: [802.69, 763.43], label: '札幌', info: '<table><tr><td>獨佔價格</td><td>598億3000万円</td></tr><tr><td>收益額</td><td>28億6400万円</td></tr><tr><td>收益率</td><td>5%</td></tr></table>', group: 'A' },
+{ coords: [786.12, 753.70], label: '定山渓', info: '<table><tr><td>獨佔價格</td><td>40億円</td></tr><tr><td>收益額</td><td>1億6000万円</td></tr><tr><td>收益率</td><td>4%</td></tr></table>', group: 'A' },
+{ coords: [794.33, 763.43], label: 'ススキノ', info: '<table><tr><td>獨佔價格</td><td>23億4000万円</td></tr><tr><td>收益額</td><td>1億6200万円</td></tr><tr><td>收益率</td><td>7%</td></tr></table>', group: 'A' },
+{ coords: [792.79, 792.64], label: '夕張', info: '<table><tr><td>獨佔價格</td><td>55億5000万円</td></tr><tr><td>收益額</td><td>2億8800万円</td></tr><tr><td>收益率</td><td>5%</td></tr></table>', group: 'A' },
+{ coords: [812.36, 802.45], label: '砂川', info: '<table><tr><td>獨佔價格</td><td>11億3000万円</td></tr><tr><td>收益額</td><td>1億9000万円</td></tr><tr><td>收益率</td><td>17%</td></tr></table>', group: 'A' },
+{ coords: [851.39, 782.96], label: '増毛', info: '<table><tr><td>獨佔價格</td><td>32億円</td></tr><tr><td>收益額</td><td>2億2400万円</td></tr><tr><td>收益率</td><td>7%</td></tr></table>', group: 'A' },
+{ coords: [861.06, 782.87], label: '留萌', info: '<table><tr><td>獨佔價格</td><td>35億円</td></tr><tr><td>收益額</td><td>2億2000万円</td></tr><tr><td>收益率</td><td>6%</td></tr></table>', group: 'A' },
+{ coords: [822.13, 813.24], label: '富良野', info: '<table><tr><td>獨佔價格</td><td>91億1000万円</td></tr><tr><td>收益額</td><td>2億8800万円</td></tr><tr><td>收益率</td><td>3%</td></tr></table>', group: 'A' },
+{ coords: [835.39, 813.11], label: '美瑛', info: '<table><tr><td>獨佔價格</td><td>96億円</td></tr><tr><td>收益額</td><td>7億5000万円</td></tr><tr><td>收益率</td><td>8%</td></tr></table>', group: 'A' },
+{ coords: [851.42, 813.15], label: '旭川', info: '<table><tr><td>獨佔價格</td><td>132億3000万円</td></tr><tr><td>收益額</td><td>12億2600万円</td></tr><tr><td>收益率</td><td>9%</td></tr></table>', group: 'A' },
+{ coords: [861.58, 813.11], label: '和寒', info: '<table><tr><td>獨佔價格</td><td>17億円</td></tr><tr><td>收益額</td><td>1億1800万円</td></tr><tr><td>收益率</td><td>7%</td></tr></table>', group: 'A' },
+{ coords: [891.36, 813.11], label: '名寄', info: '<table><tr><td>獨佔價格</td><td>1億3000万円</td></tr><tr><td>收益額</td><td>2600万円</td></tr><tr><td>收益率</td><td>20%</td></tr></table>', group: 'A' },
+{ coords: [910.80, 798.43], label: '天塩', info: '<table><tr><td>獨佔價格</td><td>6億1000万円</td></tr><tr><td>收益額</td><td>4600万円</td></tr><tr><td>收益率</td><td>8%</td></tr></table>', group: 'A' },
+{ coords: [920.43, 828.44], label: '浜頓別', info: '<table><tr><td>獨佔價格</td><td>21億1000万円</td></tr><tr><td>收益額</td><td>6300万円</td></tr><tr><td>收益率</td><td>3%</td></tr></table>', group: 'A' },
+{ coords: [960.07, 798.39], label: '稚内', info: '<table><tr><td>獨佔價格</td><td>55億1000万円</td></tr><tr><td>收益額</td><td>2億700万円</td></tr><tr><td>收益率</td><td>4%</td></tr></table>', group: 'A' },
+{ coords: [952.55, 731.21], label: '礼文', info: '<table><tr><td>獨佔價格</td><td>14億1000万円</td></tr><tr><td>收益額</td><td>1億5600万円</td></tr><tr><td>收益率</td><td>11%</td></tr></table>', group: 'A' },
+{ coords: [924.36, 758.17], label: '利尻', info: '<table><tr><td>獨佔價格</td><td>8億3000万円</td></tr><tr><td>收益額</td><td>1億4000万円</td></tr><tr><td>收益率</td><td>17%</td></tr></table>', group: 'A' },
+{ coords: [891.35, 842.37], label: '興部', info: '<table><tr><td>獨佔價格</td><td>18億2000万円</td></tr><tr><td>收益額</td><td>1億1200万円</td></tr><tr><td>收益率</td><td>6%</td></tr></table>', group: 'A' },
+{ coords: [871.78, 852.13], label: '紋別', info: '<table><tr><td>獨佔價格</td><td>26億円</td></tr><tr><td>收益額</td><td>2億2000万円</td></tr><tr><td>收益率</td><td>8%</td></tr></table>', group: 'A' },
+{ coords: [861.66, 871.10], label: '遠軽', info: '<table><tr><td>獨佔價格</td><td>5億3000万円</td></tr><tr><td>收益額</td><td>6700万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'A' },
+{ coords: [851.36, 842.37], label: '上川', info: '<table><tr><td>獨佔價格</td><td>87億2000万円</td></tr><tr><td>收益額</td><td>3億5400万円</td></tr><tr><td>收益率</td><td>4%</td></tr></table>', group: 'A' },
+{ coords: [851.23, 871.23], label: '北見', info: '<table><tr><td>獨佔價格</td><td>11億9000万円</td></tr><tr><td>收益額</td><td>1億9200万円</td></tr><tr><td>收益率</td><td>16%</td></tr></table>', group: 'A' },
+{ coords: [851.27, 900.44], label: '美幌', info: '<table><tr><td>獨佔價格</td><td>2億1000万円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'A' },
+{ coords: [851.32, 910.26], label: '網走', info: '<table><tr><td>獨佔價格</td><td>52億2000万円</td></tr><tr><td>收益額</td><td>1億8600万円</td></tr><tr><td>收益率</td><td>4%</td></tr></table>', group: 'A' },
+{ coords: [851.27, 930.72], label: '斜里', info: '<table><tr><td>獨佔價格</td><td>3億6000万円</td></tr><tr><td>收益額</td><td>5500万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [861.61, 941.02], label: '羅臼', info: '<table><tr><td>獨佔價格</td><td>40億円</td></tr><tr><td>收益額</td><td>7億6000万円</td></tr><tr><td>收益率</td><td>19%</td></tr></table>', group: 'A' },
+{ coords: [822.11, 871.14], label: '陸別', info: '<table><tr><td>獨佔價格</td><td>10億6000万円</td></tr><tr><td>收益額</td><td>2600万円</td></tr><tr><td>收益率</td><td>2%</td></tr></table>', group: 'A' },
+{ coords: [822.20, 886.70], label: '阿寒', info: '<table><tr><td>獨佔價格</td><td>2億1000万円</td></tr><tr><td>收益額</td><td>1億3000万円</td></tr><tr><td>收益率</td><td>62%</td></tr></table>', group: 'A' },
+{ coords: [822.11, 910.62], label: '摩周', info: '<table><tr><td>獨佔價格</td><td>8億3000万円</td></tr><tr><td>收益額</td><td>1億2400万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [822.06, 930.64], label: '中標津', info: '<table><tr><td>獨佔價格</td><td>20億円</td></tr><tr><td>收益額</td><td>1億6000万円</td></tr><tr><td>收益率</td><td>8%</td></tr></table>', group: 'A' },
+{ coords: [802.62, 861.42], label: '足寄', info: '<table><tr><td>獨佔價格</td><td>11億円</td></tr><tr><td>收益額</td><td>1億5000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'A' },
+{ coords: [812.39, 930.68], label: '別海', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>16%</td></tr></table>', group: 'A' },
+{ coords: [791.26, 940.89], label: '根室', info: '<table><tr><td>獨佔價格</td><td>8億円</td></tr><tr><td>收益額</td><td>1億2400万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [750.88, 831.59], label: '中札内', info: '<table><tr><td>獨佔價格</td><td>6億円</td></tr><tr><td>收益額</td><td>8000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'A' },
+{ coords: [760.55, 831.77], label: '芽室', info: '<table><tr><td>獨佔價格</td><td>7億円</td></tr><tr><td>收益額</td><td>1億円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'A' },
+{ coords: [760.60, 841.32], label: '帯広', info: '<table><tr><td>獨佔價格</td><td>12億円</td></tr><tr><td>收益額</td><td>1億5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'A' },
+{ coords: [760.55, 861.38], label: '池田', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [771.42, 900.94], label: '釧路', info: '<table><tr><td>獨佔價格</td><td>270億2000万円</td></tr><td>收益額</td><td>12億3000万円</td><tr><tr><td>收益率</td><td>5%</td></tr><table>', group: 'A' },
+{ coords: [771.47, 930.64], label: '厚岸', info: '<table><tr><td>獨佔價格</td><td>7億円</td></tr><tr><td>收益額</td><td>1億円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'A' },
+{ coords: [508.51, 686.61], label: '喜多方', info: '<table><tr><td>獨佔價格</td><td>20億円</td></tr><tr><td>收益額</td><td>3億円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [508.64, 696.37], label: '会津若松', info: '<table><tr><td>獨佔價格</td><td>18億円</td></tr><tr><td>收益額</td><td>2億5000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'A' },
+{ coords: [508.56, 715.87], label: '郡山', info: '<table><tr><td>獨佔價格</td><td>15億円</td></tr><tr><td>收益額</td><td>2億円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'A' },
+{ coords: [498.84, 725.68], label: 'いわき', info: '<table><tr><td>獨佔價格</td><td>12億円</td></tr><tr><td>收益額</td><td>1億8000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [548.50, 675.87], label: '鶴岡', info: '<table><tr><td>獨佔價格</td><td>10億円</td></tr><tr><td>收益額</td><td>1億4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'A' },
+{ coords: [558.27, 675.82], label: '酒田', info: '<table><tr><td>獨佔價格</td><td>9億円</td></tr><tr><td>收益額</td><td>1億2000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'A' },
+{ coords: [558.40, 715.96], label: '鳴子', info: '<table><tr><td>獨佔價格</td><td>5億円</td></tr><tr><td>收益額</td><td>8000万円</td></tr><tr><td>收益率</td><td>16%</td></tr></table>', group: 'A' },
+{ coords: [548.46, 735.89], label: '登米', info: '<table><tr><td>獨佔價格</td><td>6億円</td></tr><tr><td>收益額</td><td>1億円</td></tr><tr><td>收益率</td><td>17%</td></tr></table>', group: 'A' },
+{ coords: [538.29, 694.79], label: '天童', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [528.00, 694.88], label: '山形', info: '<table><tr><td>獨佔價格</td><td>8億円</td></tr><tr><td>收益額</td><td>1億5000万円</td></tr><tr><td>收益率</td><td>19%</td></tr></table>', group: 'A' },
+{ coords: [518.32, 694.83], label: '米沢', info: '<table><tr><td>獨佔價格</td><td>7億円</td></tr><tr><td>收益額</td><td>1億円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'A' },
+{ coords: [518.37, 715.92], label: '福島', info: '<table><tr><td>獨佔價格</td><td>12億円</td></tr><tr><td>收益額</td><td>1億7000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'A' },
+{ coords: [538.38, 725.68], label: '仙台', info: '<table><tr><td>獨佔價格</td><td>20億円</td></tr><tr><td>收益額</td><td>2億円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'A' },
+{ coords: [528.13, 725.68], label: '名取', info: '<table><tr><td>獨佔價格</td><td>5億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'A' },
+{ coords: [538.39, 745.12], label: '松島', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'A' },
+{ coords: [548.15, 745.17], label: '石巻', info: '<table><tr><td>獨佔價格</td><td>7億円</td></tr><tr><td>收益額</td><td>1億1000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [548.19, 755.46], label: '女川', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [606.57, 685.19], label: '秋田', info: '<table><tr><td>獨佔價格</td><td>10億円</td></tr><tr><td>收益額</td><td>1億5000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [596.24, 704.64], label: '横手', info: '<table><tr><td>獨佔價格</td><td>8億円</td></tr><tr><td>收益額</td><td>1億2000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [586.60, 694.78], label: '角館', info: '<table><tr><td>獨佔價格</td><td>6億円</td></tr><tr><td>收益額</td><td>8000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'A' },
+{ coords: [606.49, 725.63], label: '盛岡', info: '<table><tr><td>獨佔價格</td><td>12億円</td></tr><tr><td>收益額</td><td>1億8000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [596.33, 725.63], label: '花巻', info: '<table><tr><td>獨佔價格</td><td>9億円</td></tr><tr><td>收益額</td><td>1億2000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'A' },
+{ coords: [576.80, 725.63], label: '平泉', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [596.38, 735.89], label: '遠野', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'A' },
+{ coords: [596.38, 753.96], label: '釜石', info: '<table><tr><td>獨佔價格</td><td>8億円</td></tr><tr><td>收益額</td><td>1億2000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [576.89, 753.79], label: '大船渡', info: '<table><tr><td>獨佔價格</td><td>7億円</td></tr><tr><td>收益額</td><td>1億1000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [567.04, 753.92], label: '気仙沼', info: '<table><tr><td>獨佔價格</td><td>5億円</td></tr><tr><td>收益額</td><td>8000万円</td></tr><tr><td>收益率</td><td>16%</td></tr></table>', group: 'A' },
+{ coords: [616.74, 754.18], label: '久慈', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [616.74, 734.87], label: '三戸', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'A' },
+{ coords: [625.80, 734.95], label: '八戸', info: '<table><tr><td>獨佔價格</td><td>10億円</td></tr><tr><td>收益額</td><td>1億5000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [635.61, 734.73], label: '三沢', info: '<table><tr><td>獨佔價格</td><td>8億円</td></tr><tr><td>收益額</td><td>1億2000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [625.80, 724.61], label: '田子', info: '<table><tr><td>獨佔價格</td><td>5億円</td></tr><tr><td>收益額</td><td>7000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'A' },
+{ coords: [655.63, 734.91], label: '菜の花', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'A' },
+{ coords: [665.83, 734.95], label: 'むつ', info: '<table><tr><td>獨佔價格</td><td>6億円</td></tr><tr><td>收益額</td><td>8000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'A' },
+{ coords: [685.80, 725.19], label: '大間', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [645.37, 714.45], label: '青森', info: '<table><tr><td>獨佔價格</td><td>10億円</td></tr><tr><td>收益額</td><td>1億5000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [635.65, 704.63], label: '黒石', info: '<table><tr><td>獨佔價格</td><td>5億円</td></tr><tr><td>收益額</td><td>8000万円</td></tr><tr><td>收益率</td><td>16%</td></tr></table>', group: 'A' },
+{ coords: [635.47, 695.44], label: '弘前', info: '<table><tr><td>獨佔價格</td><td>7億円</td></tr><tr><td>收益額</td><td>1億円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'A' },
+{ coords: [645.41, 695.44], label: '五所川原', info: '<table><tr><td>獨佔價格</td><td>6億円</td></tr><tr><td>收益額</td><td>9000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [655.04, 695.44], label: '金木', info: '<table><tr><td>獨佔價格</td><td>8億円</td></tr><tr><td>收益額</td><td>1億2000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [674.62, 695.13], label: '竜飛', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [695.31, 685.19], label: '松前', info: '<table><tr><td>獨佔價格</td><td>16億3000万円</td></tr><tr><td>收益額</td><td>1億4000万円</td></tr><tr><td>收益率</td><td>9%</td></tr></table>', group: 'A' },
+// 東北-鋼藍色
+{ coords: [508.51, 686.61], label: '喜多方', info: '<table><tr><td>獨佔價格</td><td>20億円</td></tr><tr><td>收益額</td><td>3億円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'B' },
+{ coords: [508.64, 696.37], label: '会津若松', info: '<table><tr><td>獨佔價格</td><td>18億円</td></tr><tr><td>收益額</td><td>2億5000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'B' },
+{ coords: [508.56, 715.87], label: '郡山', info: '<table><tr><td>獨佔價格</td><td>15億円</td></tr><tr><td>收益額</td><td>2億円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'B' },
+{ coords: [498.84, 725.68], label: 'いわき', info: '<table><tr><td>獨佔價格</td><td>12億円</td></tr><tr><td>收益額</td><td>1億8000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'B' },
+{ coords: [548.50, 675.87], label: '鶴岡', info: '<table><tr><td>獨佔價格</td><td>10億円</td></tr><tr><td>收益額</td><td>1億4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'B' },
+{ coords: [558.27, 675.82], label: '酒田', info: '<table><tr><td>獨佔價格</td><td>9億円</td></tr><tr><td>收益額</td><td>1億2000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'B' },
+{ coords: [558.40, 715.96], label: '鳴子', info: '<table><tr><td>獨佔價格</td><td>5億円</td></tr><tr><td>收益額</td><td>8000万円</td></tr><tr><td>收益率</td><td>16%</td></tr></table>', group: 'B' },
+{ coords: [548.46, 735.89], label: '登米', info: '<table><tr><td>獨佔價格</td><td>6億円</td></tr><tr><td>收益額</td><td>1億円</td></tr><tr><td>收益率</td><td>17%</td></tr></table>', group: 'B' },
+{ coords: [538.29, 694.79], label: '天童', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'B' },
+{ coords: [528.00, 694.88], label: '山形', info: '<table><tr><td>獨佔價格</td><td>8億円</td></tr><tr><td>收益額</td><td>1億5000万円</td></tr><tr><td>收益率</td><td>19%</td></tr></table>', group: 'B' },
+{ coords: [518.32, 694.83], label: '米沢', info: '<table><tr><td>獨佔價格</td><td>7億円</td></tr><tr><td>收益額</td><td>1億円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'B' },
+{ coords: [518.37, 715.92], label: '福島', info: '<table><tr><td>獨佔價格</td><td>12億円</td></tr><tr><td>收益額</td><td>1億7000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'B' },
+{ coords: [538.38, 725.68], label: '仙台', info: '<table><tr><td>獨佔價格</td><td>20億円</td></tr><tr><td>收益額</td><td>2億円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'B' },
+{ coords: [528.13, 725.68], label: '名取', info: '<table><tr><td>獨佔價格</td><td>5億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'B' },
+{ coords: [538.39, 745.12], label: '松島', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'B' },
+{ coords: [548.15, 745.17], label: '石巻', info: '<table><tr><td>獨佔價格</td><td>7億円</td></tr><tr><td>收益額</td><td>1億1000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'B' },
+{ coords: [548.19, 755.46], label: '女川', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'B' },
+{ coords: [606.57, 685.19], label: '秋田', info: '<table><tr><td>獨佔價格</td><td>10億円</td></tr><tr><td>收益額</td><td>1億5000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'B' },
+{ coords: [596.24, 704.64], label: '横手', info: '<table><tr><td>獨佔價格</td><td>8億円</td></tr><tr><td>收益額</td><td>1億2000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'B' },
+{ coords: [586.60, 694.78], label: '角館', info: '<table><tr><td>獨佔價格</td><td>6億円</td></tr><tr><td>收益額</td><td>8000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'B' },
+{ coords: [606.49, 725.63], label: '盛岡', info: '<table><tr><td>獨佔價格</td><td>12億円</td></tr><tr><td>收益額</td><td>1億8000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'B' },
+{ coords: [596.33, 725.63], label: '花巻', info: '<table><tr><td>獨佔價格</td><td>9億円</td></tr><tr><td>收益額</td><td>1億2000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'B' },
+{ coords: [576.80, 725.63], label: '平泉', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'B' },
+{ coords: [596.38, 735.89], label: '遠野', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'B' },
+{ coords: [596.38, 753.96], label: '釜石', info: '<table><tr><td>獨佔價格</td><td>8億円</td></tr><tr><td>收益額</td><td>1億2000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'B' },
+{ coords: [576.89, 753.79], label: '大船渡', info: '<table><tr><td>獨佔價格</td><td>7億円</td></tr><tr><td>收益額</td><td>1億1000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'B' },
+{ coords: [567.04, 753.92], label: '気仙沼', info: '<table><tr><td>獨佔價格</td><td>5億円</td></tr><tr><td>收益額</td><td>8000万円</td></tr><tr><td>收益率</td><td>16%</td></tr></table>', group: 'B' },
+{ coords: [616.74, 754.18], label: '久慈', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'B' },
+{ coords: [616.74, 734.87], label: '三戸', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'B' },
+{ coords: [625.80, 734.95], label: '八戸', info: '<table><tr><td>獨佔價格</td><td>10億円</td></tr><tr><td>收益額</td><td>1億5000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'B' },
+{ coords: [635.61, 734.73], label: '三沢', info: '<table><tr><td>獨佔價格</td><td>8億円</td></tr><tr><td>收益額</td><td>1億2000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'B' },
+{ coords: [625.80, 724.61], label: '田子', info: '<table><tr><td>獨佔價格</td><td>5億円</td></tr><tr><td>收益額</td><td>7000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'B' },
+{ coords: [655.63, 734.91], label: '菜の花', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'B' },
+{ coords: [665.83, 734.95], label: 'むつ', info: '<table><tr><td>獨佔價格</td><td>6億円</td></tr><tr><td>收益額</td><td>8000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'B' },
+{ coords: [685.80, 725.19], label: '大間', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'B' },
+{ coords: [645.37, 714.45], label: '青森', info: '<table><tr><td>獨佔價格</td><td>10億円</td></tr><tr><td>收益額</td><td>1億5000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'B' },
+{ coords: [635.65, 704.63], label: '黒石', info: '<table><tr><td>獨佔價格</td><td>5億円</td></tr><tr><td>收益額</td><td>8000万円</td></tr><tr><td>收益率</td><td>16%</td></tr></table>', group: 'B' },
+{ coords: [635.47, 695.44], label: '弘前', info: '<table><tr><td>獨佔價格</td><td>7億円</td></tr><tr><td>收益額</td><td>1億円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'B' },
+{ coords: [645.41, 695.44], label: '五所川原', info: '<table><tr><td>獨佔價格</td><td>6億円</td></tr><tr><td>收益額</td><td>9000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'B' },
+{ coords: [655.04, 695.44], label: '金木', info: '<table><tr><td>獨佔價格</td><td>8億円</td></tr><tr><td>收益額</td><td>1億2000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'B' },
+{ coords: [674.62, 695.13], label: '竜飛', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'B' },
+,
+// 關東-関東 暗紅色
+{ coords: [469.56, 637.91], label: '草津', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [469.60, 647.63], label: '沼田', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'C' },
+{ coords: [459.79, 647.63], label: '高崎', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'C' },
+{ coords: [450.07, 647.63], label: '深谷', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [450.07, 657.36], label: '熊谷', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'C' },
+{ coords: [440.35, 667.17], label: 'さいたま', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'C' },
+{ coords: [430.72, 667.17], label: '上野', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [420.91, 667.13], label: '秋葉原', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'C' },
+{ coords: [430.58, 676.90], label: '浅草', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'C' },
+{ coords: [440.35, 706.15], label: '土浦', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [459.84, 706.19], label: '笠間', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'C' },
+{ coords: [459.89, 715.91], label: '水戸', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [469.56, 715.91], label: 'ひたちなか', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [489.14, 725.68], label: '北茨城', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'C' },
+{ coords: [489.14, 706.14], label: '那須', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [479.33, 686.65], label: '宇都宮', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [459.93, 676.93], label: '栃木', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'C' },
+{ coords: [459.84, 667.12], label: '桐生', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [459.88, 657.44], label: '前橋', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [342.38, 628.62], label: '湯河原', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'C' },
+{ coords: [352.10, 628.66], label: '小田原', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [362.35, 618.36], label: '箱根', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'C' },
+{ coords: [361.91, 637.90], label: '小田原', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [352.14, 637.90], label: '湯河原', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'C' },
+{ coords: [371.59, 637.95], label: '中華街', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [371.59, 647.63], label: '横浜', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'C' },
+{ coords: [371.54, 657.44], label: '川崎', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [391.60, 676.93], label: 'お台場', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [391.60, 676.93], label: 'お台場', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'C' },
+{ coords: [391.56, 657.43], label: '品川', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'C' },
+{ coords: [391.56, 647.53], label: '渋谷', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [401.36, 647.62], label: '原宿', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'C' },
+{ coords: [391.69, 637.94], label: '千駄ヶ谷', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'C' },
+{ coords: [431.06, 618.10], label: '秩父', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [420.86, 637.86], label: '大久保', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'C' },
+{ coords: [411.00, 618.14], label: '八王子', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'C' },
+{ coords: [411.05, 637.86], label: '新宿', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [411.05, 647.63], label: '後楽園', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'C' },
+{ coords: [411.13, 667.20], label: '東京', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'C' },
+{ coords: [411.04, 676.84], label: '日本橋', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'C' },
+{ coords: [401.32, 676.89], label: '銀座', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [411.04, 686.61], label: '船橋', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'C' },
+{ coords: [411.04, 696.47], label: '佐原', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [401.32, 686.61], label: '幕張', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'C' },
+{ coords: [391.60, 686.61], label: '千葉', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [391.60, 706.19], label: '銚子', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [332.83, 686.70], label: '館山', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'C' },
+{ coords: [352.58, 706.19], label: '鴨川', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [272.33, 657.49], label: '伊豆大島', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'C' },
+{ coords: [189.60, 673.88], label: '八丈島', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+// 海外-黑色
+{ coords: [58.88, 919.65], label: 'ホノルル', info: '<table><tr><td>獨佔價格</td><td>5億円</td></tr><tr><td>收益額</td><td>7000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'I' },
+// 中部-深紫色
+    { coords: [528.04, 666.10], label: '村上', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'D' },
+{ coords: [531.57, 588.89], label: '佐渡', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [508.57, 647.62], label: '新潟', info: '<table><tr><td>獨佔價格</td><td>5億円</td></tr><tr><td>收益額</td><td>7000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'D' },
+{ coords: [498.81, 647.67], label: '長岡', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [489.09, 657.35], label: '魚沼', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'D' },
+{ coords: [479.36, 647.67], label: '湯沢', info: '<table><tr><td>獨佔價格</td><td>6億円</td></tr><tr><td>收益額</td><td>8000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'D' },
+{ coords: [479.36, 597.68], label: '上越', info: '<table><tr><td>獨佔價格</td><td>5億円</td></tr><tr><td>收益額</td><td>7000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [469.55, 607.89], label: '長野', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [469.64, 618.10], label: '小布施', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'D' },
+{ coords: [459.88, 607.80], label: '千曲', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'D' },
+{ coords: [459.83, 637.99], label: '軽井沢', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'D' },
+{ coords: [440.34, 607.84], label: '上田', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [420.85, 597.63], label: '小淵沢', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'D' },
+{ coords: [411.18, 597.63], label: '甲府', info: '<table><tr><td>獨佔價格</td><td>5億円</td></tr><tr><td>收益額</td><td>7000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'D' },
+{ coords: [400.79, 607.93], label: '富士吉田', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'D' },
+{ coords: [322.87, 540.68], label: '豊橋', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [322.92, 550.40], label: '浜松', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [342.36, 578.11], label: '静岡', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'D' },
+{ coords: [342.40, 589.74], label: '富士宮', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [342.31, 609.14], label: '三島', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'D' },
+{ coords: [342.36, 618.91], label: '熱海', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [332.64, 609.19], label: '修善寺', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'D' },
+{ coords: [322.83, 599.42], label: '松崎', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [322.88, 618.95], label: '伊豆高原', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'D' },
+{ coords: [302.82, 609.10], label: '下田', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [411.10, 450.91], label: '小浜', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'D' },
+{ coords: [411.05, 470.32], label: '敦賀', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [420.91, 490.16], label: '鯖江', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'D' },
+{ coords: [430.54, 500.11], label: '福井', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'D' },
+{ coords: [430.58, 509.88], label: '小松', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [440.39, 500.15], label: '東尋坊', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'D' },
+{ coords: [440.35, 509.88], label: '金沢', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'D' },
+{ coords: [440.30, 519.65], label: '香林坊', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [440.39, 529.42], label: '茶屋街', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'D' },
+{ coords: [479.36, 519.65], label: '和倉温泉', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'D' },
+{ coords: [468.10, 519.65], label: '氷見', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [468.14, 539.19], label: '射水', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'D' },
+{ coords: [459.88, 529.37], label: '高岡', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'D' },
+{ coords: [459.88, 539.10], label: '富山', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [469.60, 578.04], label: '糸魚川', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [469.60, 578.04], label: '糸魚川', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [459.93, 578.12], label: '白馬', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'D' },
+{ coords: [430.59, 578.12], label: '松本', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'D' },
+{ coords: [411.05, 578.08], label: '駒ヶ根', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [420.82, 539.17], label: '高山', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'D' },
+{ coords: [410.30, 509.61], label: '郡上', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'D' },
+{ coords: [390.86, 509.61], label: '岐阜', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [371.37, 529.19], label: '土岐', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'D' },
+{ coords: [371.37, 548.90], label: '中津川', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [361.60, 509.70], label: '名古屋', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [361.60, 519.47], label: '栄', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'D' },
+{ coords: [361.56, 529.68], label: '豊田', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [361.65, 538.96], label: '瀬戸', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'D' },
+{ coords: [351.40, 499.93], label: '名古屋港', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'D' },
+{ coords: [351.88, 519.47], label: '安城', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [351.84, 529.90], label: '岡崎', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'D' },
+{ coords: [332.35, 509.70], label: '常滑', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'D' }, 
+// 近畿-古銅色
+{ coords: [331.80, 490.62], label: '四日市', info: '<table><tr><td>獨佔價格</td><td>998億1000万円</td></tr><tr><td>收益率</td><td>51億9800万円</td></tr><tr><td>收益率</td><td>5%</td></tr></table>', group: 'E' },
+{ coords: [312.27, 490.62], label: '津', info: '<table><tr><td>獨佔價格</td><td>70億5000万円</td></tr><tr><td>收益率</td><td>5億2800万円</td></tr><tr><td>收益率</td><td>7%</td></tr></table>', group: 'E' },
+{ coords: [302.55, 490.62], label: '松阪', info: '<table><tr><td>獨佔價格</td><td>40億円</td></tr><tr><td>收益率</td><td>2億4000万円</td></tr><tr><td>收益率</td><td>6%</td></tr></table>', group: 'E' },
+{ coords: [292.79, 490.71], label: '伊勢', info: '<table><tr><td>獨佔價格</td><td>214億3000万円</td></tr><tr><td>收益率</td><td>10億4000万円</td></tr><tr><td>收益率</td><td>5%</td></tr></table>', group: 'E' },
+{ coords: [292.83, 500.92], label: '鳥羽', info: '<table><tr><td>獨佔價格</td><td>33億円</td></tr><tr><td>收益率</td><td>2億7600万円</td></tr><tr><td>收益率</td><td>8%</td></tr></table>', group: 'E' },
+{ coords: [283.15, 462.69], label: '新宮', info: '<table><tr><td>獨佔價格</td><td>6億8000万円</td></tr><tr><td>收益率</td><td>7800万円</td></tr><tr><td>收益率</td><td>11%</td></tr></table>', group: 'E' },
+{ coords: [292.87, 442.93], label: '五條', info: '<table><tr><td>獨佔價格</td><td>11億2000万円</td></tr><tr><td>收益率</td><td>1億9200万円</td></tr><tr><td>收益率</td><td>17%</td></tr></table>', group: 'E' },
+{ coords: [302.59, 451.60], label: '橿原', info: '<table><tr><td>獨佔價格</td><td>2億3000万円</td></tr><tr><td>收益率</td><td>8000万円</td></tr><tr><td>收益率</td><td>35%</td></tr></table>', group: 'E' },
+{ coords: [312.40, 461.98], label: '奈良', info: '<table><tr><td>獨佔價格</td><td>85億5000万円</td></tr><tr><td>收益率</td><td>5億6300万円</td></tr><tr><td>收益率</td><td>7%</td></tr></table>', group: 'E' },
+{ coords: [322.08, 471.13], label: '伊賀', info: '<table><tr><td>獨佔價格</td><td>19億5000万円</td></tr><tr><td>收益率</td><td>1億2800万円</td></tr><tr><td>收益率</td><td>7%</td></tr></table>', group: 'E' },
+{ coords: [263.62, 403.85], label: '白浜', info: '<table><tr><td>獨佔價格</td><td>86億3000万円</td></tr><tr><td>收益率</td><td>3億900万円</td></tr><tr><td>收益率</td><td>4%</td></tr></table>', group: 'E' },
+{ coords: [273.34, 403.94], label: '御坊', info: '<table><tr><td>獨佔價格</td><td>13億1000万円</td></tr><tr><td>收益率</td><td>7500万円</td></tr><tr><td>收益率</td><td>6%</td></tr></table>', group: 'E' },
+{ coords: [283.10, 403.94], label: '和歌山', info: '<table><tr><td>獨佔價格</td><td>4億6000万円</td></tr><tr><td>收益率</td><td>9800万円</td></tr><tr><td>收益率</td><td>21%</td></tr></table>', group: 'E' },
+{ coords: [292.82, 403.98], label: '岸和田', info: '<table><tr><td>獨佔價格</td><td>21億4000万円</td></tr><tr><td>收益率</td><td>1億2300万円</td></tr><tr><td>收益率</td><td>6%</td></tr></table>', group: 'E' },
+{ coords: [302.63, 403.98], label: '堺', info: '<table><tr><td>獨佔價格</td><td>62億3000万円</td></tr><tr><td>收益率</td><td>10億3800万円</td></tr><tr><td>收益率</td><td>17%</td></tr></table>', group: 'E' },
+{ coords: [312.31, 413.62], label: '天王寺', info: '<table><tr><td>獨佔價格</td><td>1420億5000万円</td></tr><tr><td>收益率</td><td>56億6600万円</td></tr><tr><td>收益率</td><td>4%</td></tr></table>', group: 'E' },
+{ coords: [322.16, 382.72], label: '淡路島', info: '<table><tr><td>獨佔價格</td><td>5億500万円</td></tr><tr><td>收益率</td><td>3600万円</td></tr><tr><td>收益率</td><td>7%</td></tr></table>', group: 'E' },
+{ coords: [331.88, 382.64], label: '明石', info: '<table><tr><td>獨佔價格</td><td>6億4000万円</td></tr><tr><td>收益率</td><td>8000万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'E' },
+{ coords: [331.84, 392.41], label: '神戶', info: '<table><tr><td>獨佔價格</td><td>941億2000万円</td></tr><tr><td>收益率</td><td>55億2400万円</td></tr><tr><td>收益率</td><td>6%</td></tr></table>', group: 'E' },
+{ coords: [341.60, 392.36], label: '有馬', info: '<table><tr><td>獨佔價格</td><td>70億2000万円</td></tr><tr><td>收益率</td><td>9億8000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'E' },
+{ coords: [322.12, 402.44], label: '天保山', info: '<table><tr><td>獨佔價格</td><td>4242億円</td></tr><tr><td>收益率</td><td>200億5200万円</td></tr><tr><td>收益率</td><td>5%</td></tr></table>', group: 'E' },
+{ coords: [322.12, 413.71], label: 'なんば', info: '<table><tr><td>獨佔價格</td><td>731億3000万円</td></tr><tr><td>收益率</td><td>64億7200万円</td></tr><tr><td>收益率</td><td>9%</td></tr></table>', group: 'E' },
+{ coords: [322.16, 423.43], label: '北浜', info: '<table><tr><td>獨佔價格</td><td>3311億円</td></tr><tr><td>收益率</td><td>267億6800万円</td></tr><tr><td>收益率</td><td>8%</td></tr></table>', group: 'E' },
+{ coords: [322.12, 433.20], label: '京橋', info: '<table><tr><td>獨佔價格</td><td>115億1000万円</td></tr><tr><td>收益率</td><td>22億5600万円</td></tr><tr><td>收益率</td><td>20%</td></tr></table>', group: 'E' },
+{ coords: [312.31, 433.07], label: '鶴橋', info: '<table><tr><td>獨佔價格</td><td>9000万円</td></tr><tr><td>收益率</td><td>1億3600万円</td></tr><tr><td>收益率</td><td>151%</td></tr></table>', group: 'E' },
+{ coords: [331.84, 441.91], label: '門真', info: '<table><tr><td>獨佔價格</td><td>4199億円</td></tr><tr><td>收益率</td><td>815億3200万円</td></tr><tr><td>收益率</td><td>19%</td></tr></table>', group: 'E' },
+{ coords: [351.33, 422.37], label: '大阪', info: '<table><tr><td>獨佔價格</td><td>171億4000万円</td></tr><tr><td>收益率</td><td>18億8600万円</td></tr><tr><td>收益率</td><td>11%</td></tr></table>', group: 'E' },
+{ coords: [331.80, 413.67], label: '吹田', info: '<table><tr><td>獨佔價格</td><td>518億1000万円</td></tr><tr><td>收益率</td><td>35億3200万円</td></tr><tr><td>收益率</td><td>7%</td></tr></table>', group: 'E' },
+{ coords: [401.06, 480.35], label: '長浜', info: '<table><tr><td>獨佔價格</td><td>182億円</td></tr><tr><td>收益率</td><td>5億2800万円</td></tr><tr><td>收益率</td><td>3%</td></tr></table>', group: 'E' },
+{ coords: [380.65, 480.31], label: '彦根', info: '<table><tr><td>獨佔價格</td><td>12億1000万円</td></tr><tr><td>收益率</td><td>1億6200万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'E' },
+{ coords: [370.75, 480.35], label: '近江八幡', info: '<table><tr><td>獨佔價格</td><td>59億3000万円</td></tr><tr><td>收益率</td><td>2億7600万円</td></tr><tr><td>收益率</td><td>5%</td></tr></table>', group: 'E' },
+{ coords: [370.80, 471.11], label: '大津', info: '<table><tr><td>獨佔價格</td><td>439億4000万円</td></tr><tr><td>收益率</td><td>32億5600万円</td></tr><tr><td>收益率</td><td>7%</td></tr></table>', group: 'E' },
+{ coords: [361.03, 461.39], label: '祇園', info: '<table><tr><td>獨佔價格</td><td>21億円</td></tr><tr><td>收益率</td><td>4億8000万円</td></tr><tr><td>收益率</td><td>23%</td></tr></table>', group: 'E' },
+{ coords: [361.03, 451.71], label: '京都', info: '<table><tr><td>獨佔價格</td><td>7971億円</td></tr><tr><td>收益率</td><td>680億円</td></tr><tr><td>收益率</td><td>9%</td></tr></table>', group: 'E' },
+{ coords: [361.03, 441.90], label: '嵐山', info: '<table><tr><td>獨佔價格</td><td>72億円</td></tr><tr><td>收益率</td><td>10億5200万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'E' },
+{ coords: [411.05, 421.56], label: '舞鶴', info: '<table><tr><td>獨佔價格</td><td>7000万円</td></tr><tr><td>收益率</td><td>4300万円</td></tr><tr><td>收益率</td><td>61%</td></tr></table>', group: 'E' },
+{ coords: [400.09, 372.86], label: '鳥取', info: '<table><tr><td>獨佔價格</td><td>56億1000万円</td></tr><tr><td>收益率</td><td>6億円</td></tr><tr><td>收益率</td><td>11%</td></tr></table>', group: 'E' },
+{ coords: [409.81, 392.31], label: '城崎', info: '<table><tr><td>獨佔價格</td><td>56億1000万円</td></tr><tr><td>收益率</td><td>6億円</td></tr><tr><td>收益率</td><td>11%</td></tr></table>', group: 'E' },
+{ coords: [400.05, 402.13], label: '出石', info: '<table><tr><td>獨佔價格</td><td>2億5500万円</td></tr><tr><td>收益率</td><td>1億1800万円</td></tr><tr><td>收益率</td><td>46%</td></tr></table>', group: 'E' },
+{ coords: [380.60, 392.41], label: '福知山', info: '<table><tr><td>獨佔價格</td><td>214億2000万円</td></tr><tr><td>收益率</td><td>28億3100万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'E' },
+{ coords: [351.19, 392.69], label: '三田', info: '<table><tr><td>獨佔價格</td><td>10億1000万円</td></tr><tr><td>收益率</td><td>1億600万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'E' },
+{ coords: [351.19, 373.25], label: '姫路', info: '<table><tr><td>獨佔價格</td><td>3405億3000万円</td></tr><tr><td>收益率</td><td>188億9800万円</td></tr><tr><td>收益率</td><td>6%</td></tr></table>', group: 'E' },
+{ coords: [342.60, 363.19], label: '赤穗', info: '<table><tr><td>獨佔價格</td><td>24億2000万円</td></tr><tr><td>收益率</td><td>1億6200万円</td></tr><tr><td>收益率</td><td>7%</td></tr></table>', group: 'E' },
+// 中國-深藍綠色
+    { coords: [342.54, 353.28], label: '日生', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'F' },
+{ coords: [351.38, 343.65], label: '岡山', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'F' },
+{ coords: [351.38, 333.93], label: '倉敷', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'F' },
+{ coords: [334.63, 314.88], label: '福山', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'F' },
+{ coords: [323.90, 314.84], label: '鞆の浦', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'F' },
+{ coords: [334.63, 304.89], label: '尾道', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'F' },
+{ coords: [325.13, 285.36], label: '呉', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'F' },
+{ coords: [334.85, 285.36], label: '広島', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'F' },
+{ coords: [334.89, 275.64], label: '宮島', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'F' },
+{ coords: [325.13, 275.64], label: '岩国', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'F' },
+{ coords: [325.04, 265.88], label: '柳井', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'F' },
+{ coords: [325.10, 246.12], label: '宇部', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'F' },
+{ coords: [334.77, 246.12], label: '山口', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'F' },
+{ coords: [343.12, 246.08], label: '湯田温泉', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'F' },
+{ coords: [352.93, 246.17], label: '津和野', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'F' },
+{ coords: [362.65, 236.45], label: '萩', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'F' },
+{ coords: [370.87, 226.68], label: '仙崎', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'F' },
+{ coords: [343.12, 206.88], label: '下関', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'F' },
+{ coords: [362.60, 265.66], label: '浜田', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'F' },
+{ coords: [380.63, 294.91], label: '石見銀山', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'F' },
+{ coords: [409.84, 304.68], label: '出雲', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'F' },
+{ coords: [400.08, 324.12], label: '松江', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'F' },
+{ coords: [400.08, 333.89], label: '安来', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'F' },
+{ coords: [409.89, 333.93], label: '大根島', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'F' },
+{ coords: [409.84, 343.69], label: '境港', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'F' },
+{ coords: [390.32, 353.34], label: '蒜山', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'F' },
+// 四國-濃青色
+    { coords: [243.64, 295.48], label: '土佐清水', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'G' },
+{ coords: [253.36, 295.61], label: '四万十川', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'G' },
+{ coords: [272.98, 276.03], label: '宇和島', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'G' },
+{ coords: [301.21, 285.40], label: '松山', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'G' },
+{ coords: [301.17, 295.08], label: '道後', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'G' },
+{ coords: [309.87, 295.04], label: '今治', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'G' },
+{ coords: [318.18, 295.21], label: '大三島', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'G' },
+{ coords: [318.18, 304.85], label: '生口島', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'G' },
+{ coords: [302.71, 333.88], label: '四国中央', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'G' },
+{ coords: [322.16, 343.60], label: '坂出', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'G' },
+{ coords: [322.20, 353.41], label: '高松', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'G' },
+{ coords: [322.16, 363.13], label: 'さぬき', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'G' },
+{ coords: [302.71, 363.09], label: '鳴門', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'G' },
+{ coords: [292.95, 363.04], label: '徳島', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'G' },
+{ coords: [263.21, 344.13], label: '安芸', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'G' },
+{ coords: [272.93, 323.89], label: '高知', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'G' },
+{ coords: [272.93, 305.46], label: '須崎', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'G' },
+// 九州沖繩-玫瑰紅色
+  //九州-福岡県
+{ coords: [313.42, 187.24], label: '博多', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'H' },
+{ coords: [313.38, 177.61], label: '中州', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'H' },
+{ coords: [313.38, 158.08], label: '唐津', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'H' },
+{ coords: [323.72, 167.84], label: '糸島', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'H' },
+{ coords: [342.94, 168.95], label: '壱岐', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'H' },
+{ coords: [361.46, 128.65], label: '対馬', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'H' },
+{ coords: [284.48, 86.31], label: '五島', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'H' },
+{ coords: [284.11, 187.34], label: '久留米', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'H' },
+{ coords: [284.16, 206.82], label: '日田', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'H' },
+{ coords: [284.11, 216.63], label: '湯布院', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'H' },
+{ coords: [284.16, 226.35], label: '大分', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'H' },
+{ coords: [303.65, 226.44], label: '中津', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'H' },
+{ coords: [303.65, 197.15], label: '小倉', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'H' },
+{ coords: [303.69, 187.38], label: '博多', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'H' },
+{ coords: [303.65, 148.40], label: '伊万里', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'H' },
+{ coords: [303.69, 138.24], label: '佐世保', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'H' },
+{ coords: [323.66, 216.64], label: '門司港', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'H' },
+{ coords: [313.32, 206.96], label: '小倉', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'H' },
+{ coords: [253.49, 158.12], label: '天草', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'H' },
+{ coords: [263.70, 187.29], label: '熊本', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'H' },
+{ coords: [273.82, 226.39], label: '竹田', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'H' },
+{ coords: [274.13, 147.91], label: '長崎', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'H' },
+{ coords: [274.39, 158.25], label: '茂木', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'H' },
+{ coords: [284.38, 158.16], label: '諫早', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'H' },
+{ coords: [293.88, 148.44], label: '有田', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'H' },
+{ coords: [293.92, 168.06], label: '小城', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'H' },
+{ coords: [293.79, 177.78], label: '佐賀', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'H' },
+{ coords: [293.92, 187.63], label: '鳥栖', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'H' },
+{ coords: [293.84, 197.27], label: '秋月', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'H' },
+{ coords: [293.88, 226.48], label: '別府', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'H' },
+  //九州-鹿児島県
+{ coords: [185.22, 168.73], label: '枕崎', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'H' },
+{ coords: [194.94, 168.55], label: '知覧', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'H' },
+{ coords: [204.74, 178.27], label: '鹿児島', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'H' },
+{ coords: [194.85, 188.35], label: '桜島', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'H' },
+{ coords: [184.86, 198.07], label: '鹿屋', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'H' },
+{ coords: [204.66, 208.23], label: '都城', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'H' },
+{ coords: [214.91, 218.13], label: '宮崎', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'H' },
+{ coords: [223.57, 218.04], label: '西都', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'H' },
+{ coords: [234.66, 168.81], label: '水俣', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'H' },
+{ coords: [243.14, 178.58], label: '八代', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'H' },
+{ coords: [234.48, 188.34], label: '人吉', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'H' },
+  //九州-沖縄県
+{ coords: [48.44, 25.36], label: '石垣島', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'H' },
+{ coords: [48.66, 57.88], label: '宮古島', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'H' },
+{ coords: [112.43, 45.03], label: '久米島', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'H' },
+{ coords: [77.74, 108.70], label: '那覇', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'H' },
+{ coords: [89.01, 131.68], label: 'うるま', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'H' },
+{ coords: [98.77, 131.55], label: '金武', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'H' },
+{ coords: [108.45, 121.97], label: '本部', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'H' },
+{ coords: [108.45, 131.65], label: '名護', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'H' },
+{ coords: [127.01, 131.65], label: '大宜味', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'H' },
+{ coords: [100.98, 184.15], label: '奄美大島', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'H' },
+{ coords: [139.70, 196.97], label: '屋久島', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'H' },
+{ coords: [138.20, 215.57], label: '種子島', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'H' },
+],////////
+    B: [{ coords: [802.69, 763.43], label: '札幌', info: '<table><tr><td>獨佔價格</td><td>598億3000万円</td></tr><tr><td>收益額</td><td>28億6400万円</td></tr><tr><td>收益率</td><td>5%</td></tr></table>', group: 'A' },
+    { coords: [411.13, 667.20], label: '関東-東京', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'C' },
+{ coords: [371.59, 647.63], label: '関東-横浜', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'C' },
+{ coords: [361.60, 509.70], label: '中部-名古屋', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [351.33, 422.37], label: '近畿-大阪', info: '<table><tr><td>獨佔價格</td><td>171億4000万円</td></tr><tr><td>收益率</td><td>18億8600万円</td></tr><tr><td>收益率</td><td>11%</td></tr></table>', group: 'E' },
+{ coords: [313.42, 187.24], label: '九州-博多', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'H' },
+   ],
+    C: [],
+    D: [{ coords: [100.98, 184.15], label: '奄美大島', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'H' },
+{ coords: [204.74, 178.27], label: '鹿児島', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'H' },
+{ coords: [263.70, 187.29], label: '熊本', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>5000万円</td></tr><tr><td>收益率</td><td>12%</td></tr></table>', group: 'H' },
+{ coords: [273.34, 403.94], label: '御坊', info: '<table><tr><td>獨佔價格</td><td>13億1000万円</td></tr><tr><td>收益率</td><td>7500万円</td></tr><tr><td>收益率</td><td>6%</td></tr></table>', group: 'E' },
+{ coords: [274.13, 147.91], label: '長崎', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'H' },
+{ coords: [283.10, 403.94], label: '和歌山', info: '<table><tr><td>獨佔價格</td><td>4億6000万円</td></tr><tr><td>收益率</td><td>9800万円</td></tr><tr><td>收益率</td><td>21%</td></tr></table>', group: 'E' },
+{ coords: [302.63, 403.98], label: '堺', info: '<table><tr><td>獨佔價格</td><td>62億3000万円</td></tr><tr><td>收益率</td><td>10億3800万円</td></tr><tr><td>收益率</td><td>17%</td></tr></table>', group: 'E' },
+{ coords: [302.82, 609.10], label: '下田', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [303.65, 226.44], label: '中津', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'H' },
+{ coords: [312.40, 461.98], label: '奈良', info: '<table><tr><td>獨佔價格</td><td>85億5000万円</td></tr><tr><td>收益率</td><td>5億6300万円</td></tr><tr><td>收益率</td><td>7%</td></tr></table>', group: 'E' },
+{ coords: [313.42, 187.24], label: '博多', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'H' },
+{ coords: [322.12, 433.20], label: '京橋', info: '<table><tr><td>獨佔價格</td><td>115億1000万円</td></tr><tr><td>收益率</td><td>22億5600万円</td></tr><tr><td>收益率</td><td>20%</td></tr></table>', group: 'E' },
+{ coords: [322.16, 363.13], label: 'さぬき', info: '<table><tr><td>獨佔價格</td><td>1億円</td></tr><tr><td>收益額</td><td>1000万円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'G' },
+{ coords: [322.92, 550.40], label: '浜松', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [331.84, 392.41], label: '神戸', info: '<table><tr><td>獨佔價格</td><td>941億2000万円</td></tr><tr><td>收益率</td><td>55億2400万円</td></tr><tr><td>收益率</td><td>6%</td></tr></table>', group: 'E' },
+{ coords: [342.60, 363.19], label: '赤穂', info: '<table><tr><td>獨佔價格</td><td>24億2000万円</td></tr><tr><td>收益率</td><td>1億6200万円</td></tr><tr><td>收益率</td><td>7%</td></tr></table>', group: 'E' },
+{ coords: [343.12, 206.88], label: '下関', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'F' },
+{ coords: [343.12, 246.08], label: '湯田温泉', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'F' },
+{ coords: [361.03, 461.39], label: '祇園', info: '<table><tr><td>獨佔價格</td><td>21億円</td></tr><tr><td>收益率</td><td>4億8000万円</td></tr><tr><td>收益率</td><td>23%</td></tr></table>', group: 'E' },
+{ coords: [361.60, 509.70], label: '名古屋', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [362.65, 236.45], label: '萩', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'F' },
+{ coords: [371.37, 529.19], label: '土岐', info: '<table><tr><td>獨佔價格</td><td>3億円</td></tr><tr><td>收益額</td><td>4000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'D' },
+{ coords: [380.65, 480.31], label: '彦根', info: '<table><tr><td>獨佔價格</td><td>12億1000万円</td></tr><tr><td>收益率</td><td>1億6200万円</td></tr><tr><td>收益率</td><td>13%</td></tr></table>', group: 'E' },
+{ coords: [400.05, 402.13], label: '出石', info: '<table><tr><td>獨佔價格</td><td>2億5500万円</td></tr><tr><td>收益率</td><td>1億1800万円</td></tr><tr><td>收益率</td><td>46%</td></tr></table>', group: 'E' },
+{ coords: [411.18, 597.63], label: '甲府', info: '<table><tr><td>獨佔價格</td><td>5億円</td></tr><tr><td>收益額</td><td>7000万円</td></tr><tr><td>收益率</td><td>14%</td></tr></table>', group: 'D' },
+{ coords: [450.07, 647.63], label: '深谷', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [459.89, 715.91], label: '水戸', info: '<table><tr><td>獨佔價格</td><td>4億円</td></tr><tr><td>收益額</td><td>6000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [479.36, 597.68], label: '上越', info: '<table><tr><td>獨佔價格</td><td>5億円</td></tr><tr><td>收益額</td><td>7000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'D' },
+{ coords: [489.14, 706.14], label: '那須', info: '<table><tr><td>獨佔價格</td><td>2億円</td></tr><tr><td>收益額</td><td>3000万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'C' },
+{ coords: [538.38, 725.68], label: '仙台', info: '<table><tr><td>獨佔價格</td><td>20億円</td></tr><tr><td>收益額</td><td>2億円</td></tr><tr><td>收益率</td><td>10%</td></tr></table>', group: 'A' },
+{ coords: [704.99, 714.67], label: '函館', info: '<table><tr><td>獨佔價格</td><td>89億9000万円</td></tr><tr><td>收益額</td><td>13億7200万円</td></tr><tr><td>收益率</td><td>15%</td></tr></table>', group: 'A' },
+{ coords: [802.69, 763.43], label: '札幌', info: '<table><tr><td>獨佔價格</td><td>598億3000万円</td></tr><tr><td>收益額</td><td>28億6400万円</td></tr><tr><td>收益率</td><td>5%</td></tr></table>', group: 'A' },
+{ coords: [802.69, 763.43], label: '札幌', info: '<table><tr><td>獨佔價格</td><td>598億3000万円</td></tr><tr><td>收益額</td><td>28億6400万円</td></tr><tr><td>收益率</td><td>5%</td></tr></table>', group: 'A' },],
+    E: [],
+    F: [],
+    G: [],
+    H: [],
+    I: []
+  };
 
-  // 縮放事件處理
-  map.on('zoomend', function () {
-    var currentZoom = map.getZoom();
-    var fontSize = Math.max(12, Math.min(10, currentZoom * 1));
-    allMarkers.forEach((marker, index) => {
-      var pos = positions[index];
-      var newIcon = createCustomIcon(pos.label, fontSize);
-      marker.setIcon(newIcon);
-    });
-  });
+  // 初始化各組標記
+    
+  var specificMarkers = {
+    A: [],
+    B: [],
+    C: [],
+    D: [],
+    E: [],
+    F: [],
+    G: [],
+    H: [],
+    I: [],
+    J: [],
+    K: [],
+    L: [],
+    M: [],
+    N: []
+  };
 
-  // 滑鼠位置記錄
-  var mouseClickPositions = [];
-
-  // 監聽滑鼠移動事件顯示當前位置
-  map.on('mousemove', function(event) {
-    var positionElement = document.getElementById('mouse-position');
-    positionElement.textContent = `滑鼠位置：${event.latlng.lat.toFixed(2)}, ${event.latlng.lng.toFixed(2)}`;
-  });
-
-  // 監聽左鍵點擊事件
-  map.on('click', function(event) {
-    if (event.originalEvent.button === 0) {
-      var clickPosition = {
-        lat: event.latlng.lat.toFixed(2),
-        lng: event.latlng.lng.toFixed(2)
-      };
-      mouseClickPositions.push(clickPosition);
-
-      // 顯示所有記錄的點擊位置
-      updateClickPositionsDisplay();
-    }
-  });
-
-  // 更新顯示所有的滑鼠點擊位置
-  function updateClickPositionsDisplay() {
-    var positionsList = document.getElementById('mouse-click-records');
-    positionsList.innerHTML = '';
-    mouseClickPositions.forEach(function(position, index) {
-      var listItem = document.createElement('li');
-      listItem.textContent = `{ coords: [${position.lat}, ${position.lng}], label: '標記${index + 1}', info: '' },`;
-      positionsList.appendChild(listItem);
+  // 為各組標記
+  function addMarkers(positions, specificMarkers) {
+    positions.forEach(pos => {
+      var marker = L.marker(pos.coords, { icon: createCustomIcon(pos.label, 10, groupColors[pos.group]) });
+      marker.bindPopup(`<strong>${pos.label}</strong><br>${pos.info}`);
+      specificMarkers.push(marker);
     });
   }
 
-  // 切換所有圖標的顯示
-  document.getElementById('toggle-all-markers').addEventListener('change', function(event) {
-    var checked = event.target.checked;
-    allMarkers.forEach(function(marker) {
-      if (checked) {
-        marker.addTo(map);
-      } else {
-        map.removeLayer(marker);
-      }
-    });
+  Object.keys(positions).forEach(group => {
+    addMarkers(positions[group], specificMarkers[group]);
   });
-</script>
 
+ // 新增顏色標記
+  var colocopyMarkers = {
+      red: [
+{ coords: [802.69, 763.43], label: '北海道-札幌', info: '<table><tr><td>六大都市</td><td>地點</td><tr><tr><td>北海道</td><td>札幌</td><tr><tr><td>関東</td><td>東京</td></tr><tr><td>関東</td><td>横浜</td></tr><td><tr><tr><td>中部</td><td>名古屋</td></tr><td><tr><tr><td>近畿</td><td>大阪</td></tr><td><tr><tr><td>九州</td><td>博多</td></tr><table>'},
+{ coords: [411.13, 667.20], label: '関東-東京', info: '<table><tr><td>六大都市</td><td>地點</td><tr><tr><td>北海道</td><td>札幌</td><tr><tr><td>関東</td><td>東京</td></tr><tr><td>関東</td><td>横浜</td></tr><td><tr><tr><td>中部</td><td>名古屋</td></tr><td><tr><tr><td>近畿</td><td>大阪</td></tr><td><tr><tr><td>九州</td><td>博多</td></tr><table>'},
+{ coords: [371.59, 647.63], label: '関東-横浜', info: '<table><tr><td>六大都市</td><td>地點</td><tr><tr><td>北海道</td><td>札幌</td><tr><tr><td>関東</td><td>東京</td></tr><tr><td>関東</td><td>横浜</td></tr><td><tr><tr><td>中部</td><td>名古屋</td></tr><td><tr><tr><td>近畿</td><td>大阪</td></tr><td><tr><tr><td>九州</td><td>博多</td></tr><table>'},
+{ coords: [361.60, 509.70], label: '中部-名古屋', info: '<table><tr><td>六大都市</td><td>地點</td><tr><tr><td>北海道</td><td>札幌</td><tr><tr><td>関東</td><td>東京</td></tr><tr><td>関東</td><td>横浜</td></tr><td><tr><tr><td>中部</td><td>名古屋</td></tr><td><tr><tr><td>近畿</td><td>大阪</td></tr><td><tr><tr><td>九州</td><td>博多</td></tr><table>'},
+{ coords: [351.33, 422.37], label: '近畿-大阪', info: '<table><tr><td>六大都市</td><td>地點</td><tr><tr><td>北海道</td><td>札幌</td><tr><tr><td>関東</td><td>東京</td></tr><tr><td>関東</td><td>横浜</td></tr><td><tr><tr><td>中部</td><td>名古屋</td></tr><td><tr><tr><td>近畿</td><td>大阪</td></tr><td><tr><tr><td>九州</td><td>博多</td></tr><table>'},
+{ coords: [313.42, 187.24], label: '九州-博多', info: '<table><tr><td>六大都市</td><td>地點</td><tr><tr><td>北海道</td><td>札幌</td><tr><tr><td>関東</td><td>東京</td></tr><tr><td>関東</td><td>横浜</td></tr><td><tr><tr><td>中部</td><td>名古屋</td></tr><td><tr><tr><td>近畿</td><td>大阪</td></tr><td><tr><tr><td>九州</td><td>博多</td></tr><table>'},],
+    shop: [
+{ coords: [ 237.35, 649.97], label: '三宅島-卡片賣場車站30', info: '' },
+{ coords: [48.58, 90.03], label: '糸満-卡片賣場車站1', info: '' },
+{ coords: [67.98, 99.88], label: '赤嶺-卡片賣場車站2', info: '' },
+{ coords: [185.17, 179.30], label: '指宿-卡片賣場車站3', info: '' },
+{ coords: [174.70, 198.79], label: '佐多-卡片賣場車站4', info: '' },
+{ coords: [204.71, 218.81], label: '飫肥-卡片賣場車站5', info: '' },
+{ coords: [233.47, 226.99], label: '日向-卡片賣場車站6', info: '' },
+{ coords: [253.53, 227.08], label: '高千穂-卡片賣場車站7', info: '' },
+{ coords: [243.10, 158.93], label: '牛深-卡片賣場車站8', info: '' },
+{ coords: [253.36, 306.06], label: '中村-卡片賣場車站9', info: '' },
+{ coords: [302.67, 324.75], label: '新居浜-卡片賣場車站10', info: '' },
+{ coords: [362.64, 256.60], label: '益田-卡片賣場車站11', info: '' },
+{ coords: [302.63, 471.75], label: '尾鷲-卡片賣場車站12', info: '' },
+{ coords: [390.48, 422.34], label: '綾部-卡片賣場車站13', info: '' },
+{ coords: [401.13, 452.39], label: 'マキノ-卡片賣場車站14', info: '' },
+{ coords: [371.48, 569.07], label: '佐久間-卡片賣場車站15', info: '' },
+{ coords: [401.39, 559.17], label: '木曽-卡片賣場車站16', info: '' },
+{ coords: [440.46, 539.76], label: '八尾-卡片賣場車站17', info: '' },
+{ coords: [489.24, 520.32], label: '珠洲-卡片賣場車站18', info: '' },
+{ coords: [391.62, 667.89], label: '高輪G-卡片賣場車站31', info: '' },
+{ coords: [411.29, 608.67], label: '大月-卡片賣場車站20', info: '' },
+{ coords: [479.52, 677.65], label: '日光-卡片賣場車站21', info: '' },
+{ coords: [558.45, 695.73], label: '新庄-卡片賣場車站22', info: '' },
+{ coords: [606.79, 754.60], label: '宮古-卡片賣場車站23', info: '' },
+{ coords: [676.13, 735.64], label: '恐山-卡片賣場車站24', info: '' },
+{ coords: [734.41, 828.27], label: '浦河-卡片賣場車站25', info: '' },
+{ coords: [802.73, 783.59], label: '岩見沢-卡片賣場車站26', info: '' },
+{ coords: [822.13, 901.50], label: '弟子屈-卡片賣場車站27', info: '' },
+{ coords: [861.68, 931.34], label: '知床-卡片賣場車站28', info: '' },
+{ coords: [881.65, 813.86], label: '士別-卡片賣場車站29', info: '' },
+{ coords: [371.79, 707.29], label: '大網-卡片賣場車站30', info: '' },
+    ],
+    hero: [
+// 北海道
+{coords: [802.69, 763.43],label: '札幌',info: '<table><tr><td>歷史英雄</td><td>クラーク博士</td></tr><tr><td>縣市</td><td>北海道</td></tr><tr><td>效果</td><td>3/4月に一定確率で登場し、味方にすると物件を勝手に購入します。</td></tr></table>',group: 'A'},
+
+{coords: [704.99, 714.67],label: '函館',info: '<table><tr><td>歷史英雄</td><td>土方歳三</td></tr><tr><td>縣市</td><td>北海道</td></tr><tr><td>效果</td><td>別の社長から物件を奪います。</td></tr></table>',group: 'A'},
+
+// 東北
+{coords: [538.38, 725.68],label: '仙台',info: '<table><tr><td>歷史英雄</td><td>伊達政宗</td></tr><tr><td>縣市</td><td>宮城県</td></tr><tr><td>效果</td><td>急行 / 特急 / 新幹線カードを所持している場合、1枚だけランクアップします。</td></tr></table>',group: 'A'},
+
+{coords: [489.14, 706.14],label: '那須',info: '<table><tr><td>歷史英雄</td><td>那須与一</td></tr><tr><td>縣市</td><td>栃木県</td></tr><tr><td>效果</td><td>サイコロを振って出た数字に応じた物件がもらえます。</td></tr></table>',group: 'C'},
+
+{coords: [459.89, 715.91],label: '水戸',info: '<table><tr><td>歷史英雄</td><td>水戸黄門</td></tr><tr><td>縣市</td><td>茨城県</td></tr><tr><td>效果</td><td>味方にしたときに移動系のカードがもらえます。</td></tr></table>',group: 'C'},
+// 中部
+{coords: [450.07, 647.63],label: '深谷',info: '<table><tr><td>歷史英雄</td><td>渋沢栄一</td></tr><tr><td>縣市</td><td>深谷</td></tr><tr><td>效果</td><td>深谷駅以外の歴史ヒーローに関係する物件を独占していると、そこから臨時収入がもらえます。</td></tr></table>',group: 'C'},
+
+{coords: [479.36, 597.68],label: '上越',info: '<table><tr><td>歷史英雄</td><td>上杉謙信</td></tr><tr><td>縣市</td><td>上越 駅</td></tr><tr><td>效果</td><td>別の社長から物件を奪います。16年目以降になると、一定確率で所持金の1/4を最下位の社長にプレゼントします。</td></tr></table>',group: 'D'},
+
+{coords: [411.18, 597.63],label: '甲府',info: '<table><tr><td>歷史英雄</td><td>武田信玄</td></tr><tr><td>縣市</td><td>山梨県</td></tr><tr><td>效果</td><td>風林火山」のどれかが発生します。</td></tr></table>',group: 'D'},
+
+{coords: [322.92, 550.40],label: '浜松',info: '<table><tr><td>歷史英雄</td><td>徳川家康</td></tr><tr><td>縣市</td><td>静岡</td></tr><tr><td>效果</td><td>一定確率で浜松/五所川原以外の独占している駅の収益率を2倍にします。</td></tr></table>',group: 'D'},
+
+{coords: [302.82, 609.10],label: '下田',info: '<table><tr><td>歷史英雄</td><td>ペリー</td></tr><tr><td>縣市</td><td>静岡県</td></tr><tr><td>效果</td><td>目的地に一番近い社長の周りに、うんちを1～3個設置します。</td></tr></table>',group: 'D'},
+
+{coords: [371.37, 529.19],label: '土岐',info: '<table><tr><td>歷史英雄</td><td>明智光秀</td></tr><tr><td>縣市</td><td>岐阜県</td></tr><tr><td>效果</td><td>物件を割引価格で売ってくれます。また、一定確率でお金がもらえます。</td></tr></table>',group: 'D'},
+
+{coords: [361.60, 509.70],label: '名古屋',info: '<table><tr><td>歷史英雄</td><td>織田信長</td></tr><tr><td>縣市</td><td>愛知県</td></tr><tr><td>效果</td><td>別の社長のカードを消滅させます。</td></tr></table>',group: 'D'},
+
+// 近畿
+{coords: [380.65, 480.31],label: '彦根',info: '<table><tr><td>歷史英雄</td><td>井伊直弼</td></tr><tr><td>縣市</td><td>滋賀県</td></tr><tr><td>效果</td><td>別の社長が、6ヶ月間カードの使用ができなくなります。</td></tr></table>',group: 'E'},
+
+{coords: [361.03, 461.39],label: '祇園',info: '<table><tr><td>歷史英雄</td><td>清少納言</td></tr><tr><td>縣市</td><td>京都府</td></tr><tr><td>效果</td><td>うんちがある場合、うんちを消すことができます。</td></tr></table>',group: 'E'},
+
+{coords: [312.40, 461.98],label: '奈良',info: '<table><tr><td>歷史英雄</td><td>聖徳太子</td></tr><tr><td>縣市</td><td>奈良県</td></tr><tr><td>效果</td><td>味方にすると、ぶっとび周遊カードがもらえます。</td></tr></table>',group: 'E'},
+
+{coords: [342.60, 363.19],label: '赤穂',info: '<table><tr><td>歷史英雄</td><td>赤穂浪士</td></tr><tr><td>縣市</td><td>兵庫県</td></tr><tr><td>效果</td><td>12月に別の社長から一番高額の物件を奪います。</td></tr></table>',group: 'E'},
+
+{coords: [400.05, 402.13],label: '出石',info: '<table><tr><td>歷史英雄</td><td>桂小五郎</td></tr><tr><td>縣市</td><td>兵庫県</td></tr><tr><td>效果</td><td>貧乏神が憑いた場合、置き去りにしていきます。</td></tr></table>',group: 'E'},
+
+{coords: [331.84, 392.41],label: '神戸',info: '<table><tr><td>歷史英雄</td><td>源義経</td></tr><tr><td>縣市</td><td>兵庫県</td></tr><tr><td>效果</td><td>神戸を独占し、目的地から16マス以上離れていると味方にすることができます。</td></tr></table>',group: 'E'},
+
+{coords: [302.63, 403.98],label: '堺',info: '<table><tr><td>歷史英雄</td><td>石田三成</td></tr><tr><td>縣市</td><td>大阪府</td></tr><tr><td>效果</td><td>味方にした時にサミットカードがもらえます。</td></tr></table>',group: 'E'},
+
+{coords: [322.12, 433.20],label: '京橋',info: '<table><tr><td>歷史英雄</td><td>豊臣秀吉</td></tr><tr><td>縣市</td><td>大阪府</td></tr><tr><td>效果</td><td>物件を半額で売ってくれます。</td></tr></table>',group: 'E'},
+
+{coords: [283.10, 403.94],label: '和歌山',info: '<table><tr><td>歷史英雄</td><td>紀伊国屋文左衛門</td></tr><tr><td>縣市</td><td>和歌山県</td></tr><tr><td>效果</td><td>味方にしたときに、インフレ率に応じたお金がもらえます。</td></tr></table>',group: 'E'},
+
+{coords: [273.34, 403.94],label: '御坊',info: '<table><tr><td>歷史英雄</td><td>武蔵坊弁慶</td></tr><tr><td>縣市</td><td>和歌山県</td></tr><tr><td>效果</td><td>別の社長からカードを奪います。</td></tr></table>',group: 'E'},
+
+// 中國
+{coords: [343.12, 206.88],label: '下関',info: '<table><tr><td>歷史英雄</td><td>伊藤博文</td></tr><tr><td>縣市</td><td>山口県</td></tr><tr><td>效果</td><td>下関独占後の翌月に味方にすることができます。</td></tr></table>',group: 'F'},
+{coords: [343.12, 246.08],label: '湯田温泉',info: '<table><tr><td>歷史英雄</td><td>井上聞多</td></tr><tr><td>縣市</td><td>山口県</td></tr><tr><td>效果</td><td>イギリス/薩摩/豪商のどれかから借金をして、所持金を増やします。</td></tr></table>',group: 'F'},
+
+{coords: [362.65, 236.45],label: '萩',info: '<table><tr><td>歷史英雄</td><td>高杉晋作</td></tr><tr><td>縣市</td><td>山口県</td></tr><tr><td>效果</td><td>目的地から15～48マス以内にいる場合、一定確率で目的地の1～6マスへ移動できます。</td></tr></table>',group: 'F'},
+
+// 四國
+{coords: [322.16, 363.13],label: 'さぬき',info: '<table><tr><td>歷史英雄</td><td>平賀源内</td></tr><tr><td>縣市</td><td>香川県</td></tr><tr><td>效果</td><td>味方にした時、別の社長を3ヶ月休みにすることができます。</td></tr></table>',group: 'G'},
+
+// 九州
+{coords: [313.42, 187.24],label: '博多',info: '<table><tr><td>歷史英雄</td><td>黒田官兵衛</td></tr><tr><td>縣市</td><td>福岡県</td></tr><tr><td>效果</td><td>物件を1～4件もらえます。</td></tr></table>',group: 'H'},
+
+{coords: [303.65, 226.44],label: '中津',info: '<table><tr><td>歷史英雄</td><td>福沢諭吉</td></tr><tr><td>縣市</td><td>大分県</td></tr><tr><td>效果</td><td>たいらのまさカードがもらえます。</td></tr></table>',group: 'H'},
+
+{coords: [274.13, 147.91],label: '長崎',info: '<table><tr><td>歷史英雄</td><td>坂本龍馬</td></tr><tr><td>縣市</td><td>長崎県</td></tr><tr><td>效果</td><td>別の社長の物件を1～3件奪います。</td></tr></table>',group: 'H'},
+
+{coords: [263.70, 187.29],label: '熊本',info: '<table><tr><td>歷史英雄</td><td>加藤清正</td></tr><tr><td>縣市</td><td>熊本県</td></tr><tr><td>效果</td><td>目的地に着いた時の報酬が2倍になります。</td></tr></table>',group: 'H'},
+
+{coords: [204.74, 178.27],label: '鹿児島',info: '<table><tr><td>歷史英雄</td><td>大久保利通</td></tr><tr><td>縣市</td><td>鹿児島県</td></tr><tr><td>效果</td><td>目的地のある地方にいる社長を移動させます。</td></tr></table>',group: 'H'},
+
+{coords: [100.98, 184.15],label: '奄美大島',info: '<table><tr><td>歷史英雄</td><td>西郷隆盛</td></tr><tr><td>縣市</td><td>鹿児島県</td></tr><tr><td>效果</td><td>全員がお金をもらえます。</td></tr></table>',group: 'H'},
+    ],
+    ramp: [
+     { coords: [77.58, 121.36], label: '直升機停機坪站', info: '<td>北海道：4站。<br>關東：1站。<br>中國：2站。<br>四國：2站。<br>九州:：3站。<br>共：13站。<br>可以飛往全日本其中4處直升機停機坪站。<td>'},
+    { coords: [194.25, 218.94], label: '直升機停機坪站', info: '<td>北海道：4站。<br>關東：1站。<br>中國：2站。<br>四國：2站。<br>九州:：3站。<br>共：13站。<br>可以飛往全日本其中4處直升機停機坪站。<td>'},
+    { coords: [263.59, 168.77], label: '直升機停機坪站', info: '<td>北海道：4站。<br>關東：1站。<br>中國：2站。<br>四國：2站。<br>九州:：3站。<br>共：13站。<br>可以飛往全日本其中4處直升機停機坪站。<td>'},
+    { coords: [292.36, 276.96], label: '直升機停機坪站', info: '<td>北海道：4站。<br>關東：1站。<br>中國：2站。<br>四國：2站。<br>九州:：3站。<br>共：13站。<br>可以飛往全日本其中4處直升機停機坪站。<td>'},
+    { coords: [252.76, 354.93], label: '直升機停機坪站', info: '<td>北海道：4站。<br>關東：1站。<br>中國：2站。<br>四國：2站。<br>九州:：3站。<br>共：13站。<br>可以飛往全日本其中4處直升機停機坪站。<td>'},
+    { coords: [370.93, 266.41], label: '直升機停機坪站', info: '<td>北海道：4站。<br>關東：1站。<br>中國：2站。<br>四國：2站。<br>九州:：3站。<br>共：13站。<br>可以飛往全日本其中4處直升機停機坪站。<td>'},
+    { coords: [400.24, 363.85], label: '直升機停機坪站', info: '<td>北海道：4站。<br>關東：1站。<br>中國：2站。<br>四國：2站。<br>九州:：3站。<br>共：13站。<br>可以飛往全日本其中4處直升機停機坪站。<td>'},
+    { coords: [479.43, 726.43], label: '直升機停機坪站', info: '<td>北海道：4站。<br>關東：1站。<br>中國：2站。<br>四國：2站。<br>九州:：3站。<br>共：13站。<br>可以飛往全日本其中4處直升機停機坪站。<td>'},
+    { coords: [773.46, 773.84], label: '直升機停機坪站', info: '<td>北海道：4站。<br>關東：1站。<br>中國：2站。<br>四國：2站。<br>九州:：3站。<br>共：13站。<br>可以飛往全日本其中4處直升機停機坪站。<td>'},
+    { coords: [802.75, 754.44], label: '直升機停機坪站', info: '<td>北海道：4站。<br>關東：1站。<br>中國：2站。<br>四國：2站。<br>九州:：3站。<br>共：13站。<br>可以飛往全日本其中4處直升機停機坪站。<td>'},
+    { coords: [791.40, 931.31], label: '直升機停機坪站', info: '<td>北海道：4站。<br>關東：1站。<br>中國：2站。<br>四國：2站。<br>九州:：3站。<br>共：13站。<br>可以飛往全日本其中4處直升機停機坪站。<td>'},
+    { coords: [920.84, 819.32], label: '直升機停機坪站', info: '<td>北海道：4站。<br>關東：1站。<br>中國：2站。<br>四國：2站。<br>九州:：3站。<br>共：13站。<br>可以飛往全日本其中4處直升機停機坪站。<td>'},
+    ],
+    battery: [
+    { coords: [273.04, 453.09], label: '那智-重置周遊車站', info: '<table><tr><th>重置含周遊系列</th><th>使用回數(建議回數)</th></tr><tr><td>六大都市卡</td><td>4以上(建議3回重置)</td></tr><tr><td>飛往物件周遊卡</td><td>5以上(建議4回重置)</td></tr><tr><td>隨機飛行物件周遊卡</td><td>5以上(建議4回重置)</td></tr><tr><td>超級特殊卡(指定1~6)</td><td>5以上(建議4回重置)</td></tr><tr><td>飛行周遊卡(卡片賣場)</td><td>6以上(建議5回重置)</td></tr><tr><td>飛行強奪周遊卡(強奪物件)</td><td>5以上(建議4回重置)</td></tr><tr><td>前往地區!周遊卡</td><td>5以上(建議4回重置)</td></tr><tr><td>磁浮列車周遊卡(8顆骰子)</td><td>8以上(建議7回重置)</td></tr><tr><td>皇家EX卡(6顆骰子)</td><td>7以上(建議6回重置)</td></tr><tr><td>希望號周遊卡(5顆骰子)</td><td>5以上(建議4回重置)</td></tr><tr><td>新幹線周遊卡(4顆骰子)</td><td>5以上(建議4回重置)</td></tr><tr><td>特急周遊卡(3顆骰子)</td><td>5以上(建議4回重置)</td></tr><tr><td>特行周遊卡(2顆骰子)</td><td>5以上(建議4回重置)</td></tr></table>' },
+    { coords: [273.31, 443.28], label: '太地-重置周遊車站', info: '<table><tr><th>重置含周遊系列</th><th>使用回數(建議回數)</th></tr><tr><td>六大都市卡</td><td>4以上(建議3回重置)</td></tr><tr><td>飛往物件周遊卡</td><td>5以上(建議4回重置)</td></tr><tr><td>隨機飛行物件周遊卡</td><td>5以上(建議4回重置)</td></tr><tr><td>超級特殊卡(指定1~6)</td><td>5以上(建議4回重置)</td></tr><tr><td>飛行周遊卡(卡片賣場)</td><td>6以上(建議5回重置)</td></tr><tr><td>飛行強奪周遊卡(強奪物件)</td><td>5以上(建議4回重置)</td></tr><tr><td>前往地區!周遊卡</td><td>5以上(建議4回重置)</td></tr><tr><td>磁浮列車周遊卡(8顆骰子)</td><td>8以上(建議7回重置)</td></tr><tr><td>皇家EX卡(6顆骰子)</td><td>7以上(建議6回重置)</td></tr><tr><td>希望號周遊卡(5顆骰子)</td><td>5以上(建議4回重置)</td></tr><tr><td>新幹線周遊卡(4顆骰子)</td><td>5以上(建議4回重置)</td></tr><tr><td>特急周遊卡(3顆骰子)</td><td>5以上(建議4回重置)</td></tr><tr><td>特行周遊卡(2顆骰子)</td><td>5以上(建議4回重置)</td></tr></table>' },
+    { coords: [263.59, 414.24], label: '紀伊姫-重置周遊車站', info: '<table><tr><th>重置含周遊系列</th><th>使用回數(建議回數)</th></tr><tr><td>六大都市卡</td><td>4以上(建議3回重置)</td></tr><tr><td>飛往物件周遊卡</td><td>5以上(建議4回重置)</td></tr><tr><td>隨機飛行物件周遊卡</td><td>5以上(建議4回重置)</td></tr><tr><td>超級特殊卡(指定1~6)</td><td>5以上(建議4回重置)</td></tr><tr><td>飛行周遊卡(卡片賣場)</td><td>6以上(建議5回重置)</td></tr><tr><td>飛行強奪周遊卡(強奪物件)</td><td>5以上(建議4回重置)</td></tr><tr><td>前往地區!周遊卡</td><td>5以上(建議4回重置)</td></tr><tr><td>磁浮列車周遊卡(8顆骰子)</td><td>8以上(建議7回重置)</td></tr><tr><td>皇家EX卡(6顆骰子)</td><td>7以上(建議6回重置)</td></tr><tr><td>希望號周遊卡(5顆骰子)</td><td>5以上(建議4回重置)</td></tr><tr><td>新幹線周遊卡(4顆骰子)</td><td>5以上(建議4回重置)</td></tr><tr><td>特急周遊卡(3顆骰子)</td><td>5以上(建議4回重置)</td></tr><tr><td>特行周遊卡(2顆骰子)</td><td>5以上(建議4回重置)</td></tr></table>' },    
+    { coords: [253.47, 414.24], label: '串本-重置周遊車站', info: '<table><tr><th>重置含周遊系列</th><th>使用回數(建議回數)</th></tr><tr><td>六大都市卡</td><td>4以上(建議3回重置)</td></tr><tr><td>飛往物件周遊卡</td><td>5以上(建議4回重置)</td></tr><tr><td>隨機飛行物件周遊卡</td><td>5以上(建議4回重置)</td></tr><tr><td>超級特殊卡(指定1~6)</td><td>5以上(建議4回重置)</td></tr><tr><td>飛行周遊卡(卡片賣場)</td><td>6以上(建議5回重置)</td></tr><tr><td>飛行強奪周遊卡(強奪物件)</td><td>5以上(建議4回重置)</td></tr><tr><td>前往地區!周遊卡</td><td>5以上(建議4回重置)</td></tr><tr><td>磁浮列車周遊卡(8顆骰子)</td><td>8以上(建議7回重置)</td></tr><tr><td>皇家EX卡(6顆骰子)</td><td>7以上(建議6回重置)</td></tr><tr><td>希望號周遊卡(5顆骰子)</td><td>5以上(建議4回重置)</td></tr><tr><td>新幹線周遊卡(4顆骰子)</td><td>5以上(建議4回重置)</td></tr><tr><td>特急周遊卡(3顆骰子)</td><td>5以上(建議4回重置)</td></tr><tr><td>特行周遊卡(2顆骰子)</td><td>5以上(建議4回重置)</td></tr></table>' },
+    { coords: [753.91, 691.34], label: 'せたな-重置周遊車站', info: '<table><tr><th>重置含周遊系列</th><th>使用回數(建議回數)</th></tr><tr><td>六大都市卡</td><td>4以上(建議3回重置)</td></tr><tr><td>飛往物件周遊卡</td><td>5以上(建議4回重置)</td></tr><tr><td>隨機飛行物件周遊卡</td><td>5以上(建議4回重置)</td></tr><tr><td>超級特殊卡(指定1~6)</td><td>5以上(建議4回重置)</td></tr><tr><td>飛行周遊卡(卡片賣場)</td><td>6以上(建議5回重置)</td></tr><tr><td>飛行強奪周遊卡(強奪物件)</td><td>5以上(建議4回重置)</td></tr><tr><td>前往地區!周遊卡</td><td>5以上(建議4回重置)</td></tr><tr><td>磁浮列車周遊卡(8顆骰子)</td><td>8以上(建議7回重置)</td></tr><tr><td>皇家EX卡(6顆骰子)</td><td>7以上(建議6回重置)</td></tr><tr><td>希望號周遊卡(5顆骰子)</td><td>5以上(建議4回重置)</td></tr><tr><td>新幹線周遊卡(4顆骰子)</td><td>5以上(建議4回重置)</td></tr><tr><td>特急周遊卡(3顆骰子)</td><td>5以上(建議4回重置)</td></tr><tr><td>特行周遊卡(2顆骰子)</td><td>5以上(建議4回重置)</td></tr></table>' },
+    ],
+    copy: [
+    { coords: [89.20, 121.45], label: '宜野湾-複製車站', info: '<td>可以複製一張卡片。<br>補充：佐多-卡片賣場，有販售「複製卡」。<br>(佐多-卡片賣場(九洲)，年數為1-49的限定)<td>' },
+    { coords: [58.17, 90.03], label: '豊見城-複製車站', info: '<td>可以複製一張卡片。<br>補充：佐多-卡片賣場，有販售「複製卡」。<br>(佐多-卡片賣場(九洲)，年數為1-49的限定)<td>' },
+    { coords: [48.27, 99.71], label: '八重瀬-複製車站', info: '<td>可以複製一張卡片。<br>補充：佐多-卡片賣場，有販售「複製卡」。<br>(佐多-卡片賣場(九洲)，年數為1-49的限定)<td>' },
+    { coords: [57.77, 109.39], label: '南城-複製車站', info: '<td>可以複製一張卡片。<br>補充：佐多-卡片賣場，有販售「複製卡」。<br>(佐多-卡片賣場(九洲)，年數為1-49的限定)<td>' },
+    { coords: [753.92, 812.51], label: '日高-複製車站', info: '<td>可以複製一張卡片。<br>補充：佐多-卡片賣場，有販售「複製卡」。<br>(佐多-卡片賣場(九洲)，年數為1-49的限定)<td>' },
+    { coords: [734.35, 812.82], label: '静内-複製車站', info: '<td>可以複製一張卡片。<br>補充：佐多-卡片賣場，有販售「複製卡」。<br>(佐多-卡片賣場(九洲)，年數為1-49的限定)<td>' },
+    ],
+    lottery: [
+    { coords: [253.21, 236.88], label: '日之影-彩券車站', info: '<td>可以用拉霸機挑戰摸彩的車站，<br>一等獎到六等獎，<br>隨年數上升金額。<td>' },
+    { coords: [263.55, 246.96], label: '佐伯-彩券車站', info: '<td>可以用拉霸機挑戰摸彩的車站，<br>一等獎到六等獎，<br>隨年數上升金額。<td>' },
+    { coords: [410.76, 530.24], label: '下呂-彩券車站', info: '<td>可以用拉霸機挑戰摸彩的車站，<br>一等獎到六等獎，<br>隨年數上升金額。<td>' },
+    { coords: [362.45, 687.31], label: '木更津-彩券車站', info: '<td>可以用拉霸機挑戰摸彩的車站，<br>一等獎到六等獎，<br>隨年數上升金額。<td>' },
+    { coords: [705.22, 705.61], label: '五稜郭-彩券車站', info: '<td>可以用拉霸機挑戰摸彩的車站，<br>一等獎到六等獎，<br>隨年數上升金額。<td>' },
+    { coords: [960.17, 819.32], label: '宗谷-彩券車站', info: '<td>可以用拉霸機挑戰摸彩的車站，<br>一等獎到六等獎，<br>隨年數上升金額。<td>' },
+    ],
+    ncard: [
+    { coords: [282.62, 276.88], label: '好卡片車站', info: '比起普通的卡片車站，有更高機率獲得好卡片的車站' },
+    { coords: [253.38, 247.22], label: '好卡片車站', info: '比起普通的卡片車站，有更高機率獲得好卡片的車站' },
+    { coords: [273.80, 247.09], label: '好卡片車站', info: '比起普通的卡片車站，有更高機率獲得好卡片的車站' },
+    { coords: [273.80, 247.09], label: '好卡片車站', info: '比起普通的卡片車站，有更高機率獲得好卡片的車站' },
+    { coords: [253.47, 276.83], label: '好卡片車站', info: '比起普通的卡片車站，有更高機率獲得好卡片的車站' },
+    { coords: [282.77, 286.16], label: '好卡片車站', info: '比起普通的卡片車站，有更高機率獲得好卡片的車站' },
+    { coords: [362.67, 697.04], label: '好卡片車站', info: '比起普通的卡片車站，有更高機率獲得好卡片的車站' },
+    { coords: [352.64, 687.49], label: '好卡片車站', info: '比起普通的卡片車站，有更高機率獲得好卡片的車站' },
+    { coords: [352.73, 697.21], label: '好卡片車站', info: '比起普通的卡片車站，有更高機率獲得好卡片的車站' },
+    { coords: [332.89, 697.04], label: '好卡片車站', info: '比起普通的卡片車站，有更高機率獲得好卡片的車站' },
+    { coords: [362.36, 706.85], label: '好卡片車站', info: '比起普通的卡片車站，有更高機率獲得好卡片的車站' },
+    { coords: [362.67, 697.04], label: '好卡片車站', info: '比起普通的卡片車站，有更高機率獲得好卡片的車站' },
+    ],
+  phoenixone: [
+    { coords: [600, 700], label: 'phoenixone-J組標記', info: '這是J組的標記資訊' },
+  ],
+  phoenixtwo: [
+    { coords: [700, 800], label: 'phoenixtwo-K組標記', info: '這是K組的標記資訊' },
+  ],
+  phoenixthree: [
+    { coords: [800, 900], label: 'phoenixthree-L組標記', info: '這是L組的標記資訊' },
+  ],
+  phoenixfour: [
+    { coords: [900, 1000], label: 'phoenixfour-M組標記', info: '這是M組的標記資訊' },
+  ],
+  phoenixfive: [
+    { coords: [1000, 1100], label: 'phoenixfive-N組標記', info: '這是N組的標記資訊' },
+  ],
+  };
+
+  // 定義顏色圖標
+  var icons = {
+    red: L.icon({
+      iconUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-icon-2x-c-red.svg',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-shadow.png',
+      shadowSize: [41, 41]
+    }),
+    shop: L.icon({
+      iconUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-icon-2x-s-31-shop.svg',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-shadow.png',
+      shadowSize: [41, 41]
+    }),
+    hero: L.icon({
+      iconUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-icon-2x-s-29-hero.svg',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-shadow.png',
+      shadowSize: [41, 41]
+    }),
+    ramp: L.icon({
+      iconUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-icon-2x-s-4-ramp.svg',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-shadow.png',
+      shadowSize: [41, 41]
+    }),
+    battery: L.icon({
+      iconUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-icon-2x-s-6-battery_3.svg',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-shadow.png',
+      shadowSize: [41, 41]
+    }),
+    copy: L.icon({
+      iconUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-icon-2x-s-5-copy_3.svg',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-shadow.png',
+      shadowSize: [41, 41]
+    }),
+    lottery: L.icon({
+      iconUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-icon-2x-s-6-lottery_3.svg',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-shadow.png',
+      shadowSize: [41, 41]
+    }),
+    ncard: L.icon({
+      iconUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-icon-2x-s-10-ncard.svg',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-shadow.png',
+      shadowSize: [41, 41]
+    }),
+   phoenixone: L.icon({
+    iconUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-icon.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-shadow.png',
+    shadowSize: [41, 41]
+  }),
+  phoenixtwo: L.icon({
+    iconUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-icon.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-shadow.png',
+    shadowSize: [41, 41]
+  }),
+  phoenixthree: L.icon({
+    iconUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-icon.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-shadow.png',
+    shadowSize: [41, 41]
+  }),
+  phoenixfour: L.icon({
+    iconUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-icon.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-shadow.png',
+    shadowSize: [41, 41]
+  }),
+  phoenixfive: L.icon({
+    iconUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-icon.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowUrl: 'https://phoenix-open-image.s3.ap-southeast-2.amazonaws.com/images/marker-shadow.png',
+    shadowSize: [41, 41]
+  }),
+  };
+
+  // 添加B商店標記
+  colocopyMarkers.red.forEach(pos => {
+    var redMarker = L.marker(pos.coords, { icon: icons.red });
+    redMarker.bindPopup(`<strong>${pos.label}</strong><br>${pos.info}`);
+    specificMarkers.B.push(redMarker); // 將黃色標記加入 C 組
+    redMarker.addTo(map); // 將黃色標記添加到地圖上
+  });
+  // 添加商店標記
+  colocopyMarkers.shop.forEach(pos => {
+    var shopMarker = L.marker(pos.coords, { icon: icons.shop });
+    shopMarker.bindPopup(`<strong>${pos.label}</strong><br>${pos.info}`);
+    specificMarkers.C.push(shopMarker); // 將黃色標記加入 C 組
+    shopMarker.addTo(map); // 將黃色標記添加到地圖上
+  });
+  // 添加綠色標記
+  colocopyMarkers.hero.forEach(pos => {
+    var heroMarker = L.marker(pos.coords, { icon: icons.hero });
+    heroMarker.bindPopup(`<strong>${pos.label}</strong><br>${pos.info}`);
+    specificMarkers.D.push(heroMarker); // 將綠色標記加入 D 組
+    heroMarker.addTo(map); // 將綠色標記添加到地圖上
+  });
+
+  // 添加橙色標記
+  colocopyMarkers.ramp.forEach(pos => {
+    var rampMarker = L.marker(pos.coords, { icon: icons.ramp });
+    rampMarker.bindPopup(`<strong>${pos.label}</strong><br>${pos.info}`);
+    specificMarkers.E.push(rampMarker); // 將橙色標記加入 E 組
+    rampMarker.addTo(map); // 將橙色標記添加到地圖上
+  });
+
+  // 添加黑色標記
+  colocopyMarkers.battery.forEach(pos => {
+    var batteryMarker = L.marker(pos.coords, { icon: icons.battery });
+    batteryMarker.bindPopup(`<strong>${pos.label}</strong><br>${pos.info}`);
+    specificMarkers.F.push(batteryMarker); // 將黑色標記加入 F 組
+    batteryMarker.addTo(map); // 將黑色標記添加到地圖上
+  });
+
+  // 添加紅色標記
+  colocopyMarkers.copy.forEach(pos => {
+    var copyMarker = L.marker(pos.coords, { icon: icons.copy });
+    copyMarker.bindPopup(`<strong>${pos.label}</strong><br>${pos.info}`);
+    specificMarkers.G.push(copyMarker); // 將紅色標記加入 G 組
+    copyMarker.addTo(map); // 將紅色標記添加到地圖上
+  });
+
+  // 添加灰色標記
+  colocopyMarkers.lottery.forEach(pos => {
+    var lotteryMarker = L.marker(pos.coords, { icon: icons.lottery });
+    lotteryMarker.bindPopup(`<strong>${pos.label}</strong><br>${pos.info}`);
+    specificMarkers.H.push(lotteryMarker); // 將灰色標記加入 H 組
+    lotteryMarker.addTo(map); // 將灰色標記添加到地圖上
+  });
+
+  // 添加ncard標記
+  colocopyMarkers.ncard.forEach(pos => {
+    var ncardMarker = L.marker(pos.coords, { icon: icons.ncard });
+    ncardMarker.bindPopup(`<strong>${pos.label}</strong><br>${pos.info}`);
+    specificMarkers.I.push(ncardMarker); // 將ncard標記加入 I 組
+    ncardMarker.addTo(map); // 將ncard標記添加到地圖上
+  });
+// 添加 J 組標記
+colocopyMarkers.phoenixone.forEach(pos => {
+  var phoenixoneMarker = L.marker(pos.coords, { icon: icons.phoenixone });
+  phoenixoneMarker.bindPopup(`<strong>${pos.label}</strong><br>${pos.info}`);
+  specificMarkers.J.push(phoenixoneMarker);
+  phoenixoneMarker.addTo(map);
+});
+
+// 添加 K 組標記
+colocopyMarkers.phoenixtwo.forEach(pos => {
+  var phoenixtwoMarker = L.marker(pos.coords, { icon: icons.phoenixtwo });
+  phoenixtwoMarker.bindPopup(`<strong>${pos.label}</strong><br>${pos.info}`);
+  specificMarkers.K.push(phoenixtwoMarker);
+  phoenixtwoMarker.addTo(map);
+});
+
+// 添加 L 組標記
+colocopyMarkers.phoenixthree.forEach(pos => {
+  var phoenixthreeMarker = L.marker(pos.coords, { icon: icons.phoenixthree });
+  phoenixthreeMarker.bindPopup(`<strong>${pos.label}</strong><br>${pos.info}`);
+  specificMarkers.L.push(phoenixthreeMarker);
+  phoenixthreeMarker.addTo(map);
+});
+
+// 添加 M 組標記
+colocopyMarkers.phoenixfour.forEach(pos => {
+  var phoenixfourMarker = L.marker(pos.coords, { icon: icons.phoenixfour });
+  phoenixfourMarker.bindPopup(`<strong>${pos.label}</strong><br>${pos.info}`);
+  specificMarkers.M.push(phoenixfourMarker);
+  phoenixfourMarker.addTo(map);
+});
+
+// 添加 N 組標記
+colocopyMarkers.phoenixfive.forEach(pos => {
+  var phoenixfiveMarker = L.marker(pos.coords, { icon: icons.phoenixfive });
+  phoenixfiveMarker.bindPopup(`<strong>${pos.label}</strong><br>${pos.info}`);
+  specificMarkers.N.push(phoenixfiveMarker);
+  phoenixfiveMarker.addTo(map);
+});
+
+// 分別創建各組圖層
+var layerGroups = {};
+Object.keys(specificMarkers).forEach(group => {
+  layerGroups[group] = L.layerGroup(specificMarkers[group]);
+});
+
+// 創建父圖層組，包含所有組
+var allMarkersGroup = L.layerGroup(Object.values(layerGroups));
+
+// 將圖層添加到地圖
+Object.values(layerGroups).forEach(layerGroup => layerGroup.addTo(map));
+
+// 控制圖層選單
+var controls = L.control.layers(null, null, { position: 'topright' }).addTo(map);
+
+// 添加 "顯示所有物件" 控制項
+controls.addOverlay(allMarkersGroup, '顯示所有物件');
+
+// 創建對應的名稱映射
+var displayMappings = {
+  '物件車站A': 'A',
+  '六大都市B': 'B',
+  '卡片賣場車站C': 'C',
+  '歷史英雄D': 'D',
+  '搭乘直升機站E': 'E',
+  '重置周遊車站F': 'F',
+  '卡片複製車站G': 'G',
+  '抽獎彩券車站H': 'H',
+  '好卡片車站I': 'I',
+   '好卡片車站J': 'J',
+    '好卡片車站K': 'K',
+    '好卡片車站L': 'L',
+    '好卡片車站M': 'M',
+    '好卡片車站N': 'N',
+    
+    
+};
+
+// 添加控制項
+Object.keys(displayMappings).forEach(displayName => {
+  var groupKey = displayMappings[displayName];
+  controls.addOverlay(layerGroups[groupKey], displayName);
+});
+
+// 確保一開始不顯示任何標記圖層
+Object.values(layerGroups).forEach(layerGroup => {
+  map.removeLayer(layerGroup);
+});
+
+// 在初始化地圖後，立即顯示 "六大都市" 圖層
+map.addLayer(layerGroups['A']); // 'A' 是 "六大都市" 的組別
+
+// 監聽控制圖層選單的變更事件
+map.on('overlayadd overlayremove', function (e) {
+  // 如果選擇了 "顯示所有物件"
+  if (e.name === '顯示所有物件') {
+    if (e.type === 'overlayadd') {
+      Object.values(layerGroups).forEach(layerGroup => {
+        if (!map.hasLayer(layerGroup)) {
+          map.addLayer(layerGroup);
+        }
+      });
+    } else {
+      Object.values(layerGroups).forEach(layerGroup => {
+        map.removeLayer(layerGroup);
+      });
+    }
+  } else {
+    // 確保選中其他選項時的行為
+    var groupKey = displayMappings[e.name];
+    if (groupKey) {
+      if (e.type === 'overlayadd' && !map.hasLayer(layerGroups[groupKey])) {
+        map.addLayer(layerGroups[groupKey]);
+      } else if (e.type === 'overlayremove' && map.hasLayer(layerGroups[groupKey])) {
+        map.removeLayer(layerGroups[groupKey]);
+      }
+    }
+  }
+});
+
+
+  </script>
 </body>
 </html>
